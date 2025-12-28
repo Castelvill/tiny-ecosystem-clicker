@@ -13,3 +13,11 @@ To compile this project, make sure you have the following dependencies installed
 Then clone this repository and build the project by running:
 
     make
+
+## Screenshots
+
+
+Algae and sand
+<br>
+<img src="screenshots/algae_and_sand.png" width="700"/>
+<br>
