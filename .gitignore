@@ -1,0 +1,5 @@
+tiny-ecosystem
+.directory
+.vscode
+temp/*
+callgrind.*
