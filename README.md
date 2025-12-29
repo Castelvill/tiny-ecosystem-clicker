@@ -24,5 +24,5 @@ Then clone this repository and build the project by running:
 
 Algae and sand
 <br>
-<img src="screenshots/algae_and_sand.png" width="700"/>
+<img src="screenshots/showcase.png" width="700"/>
 <br>
