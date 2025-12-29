@@ -5,7 +5,7 @@ CXXFLAGS_SANITIZE := -fsanitize=address,undefined
 LIBS := -lraylib 
 
 SRC_DIR := src
-SRC := $(SRC_DIR)/main.cpp
+SRC := $(SRC_DIR)/utilities.cpp $(SRC_DIR)/main.cpp
 
 OUTPUT := tiny-ecosystem
 

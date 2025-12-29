@@ -2,7 +2,7 @@
 
 A small clicker+simulator game written in C++ using Raylib.
 
-# Build
+## Build
 
 To compile this project, make sure you have the following dependencies installed:
 
@@ -14,8 +14,13 @@ Then clone this repository and build the project by running:
 
     make
 
-## Screenshots
+## Features
 
+- Algae - food source, floats in the water.
+- Sand - falls to the bottom of the aquarium. Sand particles collide with each other, forming a substrate.
+- Ostracod - moves in the water in search of food (algae). Can die from starvation.
+
+## Screenshots
 
 Algae and sand
 <br>
