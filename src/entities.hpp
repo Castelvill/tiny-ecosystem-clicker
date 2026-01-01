@@ -1,4 +1,5 @@
 #include "utilities.hpp"
+#include "environment.hpp"
 #include <time.h>
 #include <vector>
 #include <limits>
@@ -6,35 +7,34 @@
 
 using std::vector;
 
-const int screenWidth = 800;
-const int screenHeight = 450;
-const int startingWaterLevel = screenHeight * 0.8;
-const float gravity = 0.1f;
-const float minSandFall = 0.5f;
-const float maxParticleRadius = 10.0f;
-const float speedLimit = 1.0f;
-const int saturationFromAlgae = 300;
-
 class Entity{
 public:
     bool active = true;
-    Vector2 pos;
-    Vector2 velocity;
-    float radius;
+    Vector2 pos = VEC2(0.0f, 0.0f);;
+    Vector2 velocity = VEC2(0.0f, 0.0f);;
+    float radius = 1.0f;
 };
 
-struct EcosystemLite{
+class Algae: public Entity{
+    constexpr static Vector2 SIZE_RANGE = VEC2(2.0f, 8.0f);
 public:
-    float waterSurfaceY;
-    float waterLevel;
-    vector<Entity> algaes;
+    Algae();
+    void update(float waterSurfaceY);
+};
+
+class Sand: public Entity{
+    constexpr static Vector2 SIZE_RANGE = VEC2(2.0f, 8.0f);
+public:
+    Sand();
+    void settle();
+    void update(Environment & ecosystem, vector<Sand> & sand, size_t currentSandIdx);
 };
 
 class Ostracod: public Entity{
-    constexpr static Vector2 sizeRange = VEC2(2.0f, 8.0f);
-    constexpr static Vector2 visionRange = VEC2(180.0f, 200.0f);
-    constexpr static Vector2 reactionTimeRange = VEC2(5.0f, 20.0f);
-    constexpr static Vector2 speedRange = VEC2(0.4f, 0.8f);
+    constexpr static Vector2 SIZE_RANGE = VEC2(2.0f, 8.0f);
+    constexpr static Vector2 VISION_RANGE = VEC2(180.0f, 200.0f);
+    constexpr static Vector2 REACTION_TIME_RANGE = VEC2(5.0f, 20.0f);
+    constexpr static Vector2 SPEED_RANGE = VEC2(0.4f, 0.8f);
 public:
     const static int baseSaturation = 600;
     const static int maxSaturation = 6000;
@@ -51,7 +51,7 @@ public:
     float speed = 0.0f;
 
     Ostracod();
-    void decideToMove(EcosystemLite & ecosystem, bool underwater);
-    void update(EcosystemLite & ecosystem);
-    Entity* findFirstVisibleAlgae(vector<Entity> & algaes);
+    Algae* findFirstVisibleAlgae(vector<Algae> & algaes);
+    void decideToMove(Environment & ecosystem, vector<Algae> & algaes, bool underwater);
+    void update(Environment & ecosystem, vector<Algae> & algaes);
 };

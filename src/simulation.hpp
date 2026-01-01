@@ -1,10 +1,12 @@
 #include "entities.hpp"
 
-class Ecosystem: public EcosystemLite{
-    vector<Entity> sand;
+class Simulation{
+    Environment ecosystem;
+    vector<Algae> algaes;
+    vector<Sand> sand;
     vector<Ostracod> ostracods;
 public:
-    void init();
+    Simulation();
 
     void spawnAlgae();
     void updateAlgaes();

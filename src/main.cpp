@@ -1,40 +1,38 @@
-#include "ecosystem.hpp"
+#include "simulation.hpp"
 
-void update(Ecosystem & ecosystem){
-    ecosystem.update();
+void update(Simulation & simulation){
+    simulation.update();
 }
 
-void draw(const Ecosystem & ecosystem){
+void draw(const Simulation & simulation){
     BeginDrawing();
 
     ClearBackground(RAYWHITE);
 
-    ecosystem.draw();
+    simulation.draw();
 
-    //Temporary text
     DrawText("Press 1 to spawn algae\nPress 2 to spawn sand\nPress 3 to spawn ostracod", 5, 5, 20, BLACK);
 
     EndDrawing();
 }
 
 void mainLoop(){
-    Ecosystem ecosystem;
-    ecosystem.init();
+    Simulation simulation;
     while(!WindowShouldClose()){ //Detect window close button or ESC key
-        update(ecosystem);
-        draw(ecosystem);
+        update(simulation);
+        draw(simulation);
     }
 }
 
 int main(){
     srand(time(NULL));
     SetConfigFlags(FLAG_MSAA_4X_HINT);
-    InitWindow(screenWidth, screenHeight, "Tiny Ecosystem Clicker");
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Tiny Ecosystem Clicker");
     SetTargetFPS(60);
 
     mainLoop();
 
-    CloseWindow(); //Close window and OpenGL context
+    CloseWindow();
 
     return 0;
 }
