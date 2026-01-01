@@ -5,4 +5,8 @@
 
 float getDistance(Vector2 pos1, Vector2 pos2);
 
+float getVectorMagnitude(Vector2 vector);
+
+void limitVector(Vector2 & vector, float limit);
+
 float randomBetween(float min, float max);

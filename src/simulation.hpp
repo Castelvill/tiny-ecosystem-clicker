@@ -5,6 +5,9 @@ class Simulation{
     vector<Algae> algaes;
     vector<Sand> sand;
     vector<Ostracod> ostracods;
+
+    size_t totalOstracods = 0;
+    size_t aliveOstracods = 0;
 public:
     Simulation();
 

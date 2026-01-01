@@ -27,12 +27,15 @@ void Simulation::updateSand(){
 void Simulation::spawnOstracods(){
     if(IsKeyDown(KEY_THREE)){
         ostracods.emplace_back();
+        ++totalOstracods;
     }
 }
 void Simulation::updateOstracods(){
+    aliveOstracods = 0;
     for(Ostracod & ostracodIt : ostracods){
-        ostracodIt.update(ecosystem, algaes);
+        ostracodIt.update(ecosystem, algaes, sand, aliveOstracods);
     }
+    printf("Alive: %lu / %lu\n", aliveOstracods, totalOstracods);
 }
 
 void Simulation::update(){
