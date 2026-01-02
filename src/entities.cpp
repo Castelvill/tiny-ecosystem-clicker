@@ -101,6 +101,7 @@ Ostracod::Ostracod(){
     vision = randomBetween(Ostracod::VISION_RANGE.x, Ostracod::VISION_RANGE.y);
     reactionTime = randomBetween(Ostracod::REACTION_TIME_RANGE.x, Ostracod::REACTION_TIME_RANGE.y);
     speed = randomBetween(Ostracod::SPEED_RANGE.x, Ostracod::SPEED_RANGE.y);
+    goToWaterSurface = false;
 }
 
 Algae* Ostracod::findNearestAlgae(vector<Algae> & algaes){
@@ -117,65 +118,87 @@ Algae* Ostracod::findNearestAlgae(vector<Algae> & algaes){
     return nearestAlgae;
 }
 
-void Ostracod::decideToMove(Environment & ecosystem, vector<Algae> & algaes, bool underwater){
+void accelerateInRandomDirection(Vector2 & movementVector, float acceleration){
+    float theta = randomBetween(0, 2 * PI);
+    float radius = acceleration;// * std::sqrt(randomBetween(0, 1));
+
+    movementVector = VEC2(
+        radius * std::cos(theta),
+        radius * std::sin(theta)
+    );
+}
+
+void Ostracod::thinkAboutTheNextMove(const Environment & ecosystem, vector<Algae> & algaes,
+    Entity*& visibleAlgae
+){
     if(reactionCooldown > 0){
         reactionCooldown -= Ostracod::BASIC_ENERGY_COST;
         return;
     }
-
-    float acceleration = speed;
-        
     reactionCooldown = reactionTime;
 
-    if(!underwater)
+    //Move randomly until ostracod gets unstuck
+    if(goInRandomDirection){
+        if(velocity.x != 0.0f && velocity.y != 0.0f){
+            goInRandomDirection = false;
+            goToWaterSurface = true;
+        }
+        else
+            return;
+    }
+    
+    //Check if ostracod reached the water surface 
+    if(goToWaterSurface){
+        if(pos.y >= ecosystem.waterSurfaceY)
+            goToWaterSurface = false;
+        else
+            return;
+    }
+    
+    //Decide if ostracod should move towards the nearest algae
+    if(saturation <= Ostracod::STARVING_TRIGGER){
+        searchForFood = true;
+        visibleAlgae = findNearestAlgae(algaes);
+    }
+    else
+        searchForFood = false;
+}
+
+void Ostracod::thinkAndMove(Environment & ecosystem, vector<Algae> & algaes, bool isUnderwater){
+    float acceleration = speed;
+
+    if(!isUnderwater)
         acceleration *= (1.0f - Ostracod::OUTSIDE_WATER_SPEED_PENALITY);
 
     Vector2 movementVector = VEC2(0.0f, 0.0f);
     Entity* visibleAlgae = nullptr;
-    
-    if(saturation <= Ostracod::STARVING_TRIGGER)
-        visibleAlgae = findNearestAlgae(algaes);
 
-    if(visibleAlgae == nullptr){ //Move randomly
-        float theta = randomBetween(0, 2 * PI);
-        float radius = acceleration * std::sqrt(randomBetween(0, 1));
+    thinkAboutTheNextMove(ecosystem, algaes, visibleAlgae);
 
-        movementVector = VEC2(
-            radius * std::cos(theta),
-            radius * std::sin(theta)
-        );
-    }
-    else{ //Move to algaes
+    //Move to algaes
+    if(searchForFood && visibleAlgae != nullptr){ 
         movementVector = VEC2(
             visibleAlgae->pos.x - pos.x,
             visibleAlgae->pos.y - pos.y
         );
         limitVector(movementVector, acceleration);
     }
+    //Move up
+    else if(goToWaterSurface) 
+        movementVector.y -= acceleration;
+    //Move randomly
+    else 
+        accelerateInRandomDirection(movementVector, acceleration);
 
     velocity.x += movementVector.x;
     velocity.y += movementVector.y;
 }
 
-void Ostracod::update(Environment & ecosystem, vector<Algae> & algaes, vector<Sand> & sand,
-    size_t &aliveOstracods
-){
-    if(!active)
-        return;
-    
-    bool underwater = pos.y >= ecosystem.waterSurfaceY;
-
-    //Behavior when alive or dead
-    if(alive){
-        ++aliveOstracods;
-        saturation -= Ostracod::BASIC_ENERGY_COST;
-        if(saturation <= 0)
-            alive = false;
-        else
-            decideToMove(ecosystem, algaes, underwater);
-    }
-    //Deaccelerate on x axis if dead
-    if(!alive){ 
+void Ostracod::move(Environment & ecosystem, vector<Algae> & algaes, bool isUnderwater){
+    if(alive)
+        thinkAndMove(ecosystem, algaes, isUnderwater);
+    else{ 
+        //Deaccelerate on x axis
         if(velocity.x > Ostracod::AFTER_DEATH_SPEED_PENALITY_PRECISION
             || velocity.x < -Ostracod::AFTER_DEATH_SPEED_PENALITY_PRECISION
         )
@@ -185,32 +208,10 @@ void Ostracod::update(Environment & ecosystem, vector<Algae> & algaes, vector<Sa
     }
 
     limitVector(velocity, SPEED_LIMIT);
+}
 
-    //Gravity and buoyancy
-    if(!underwater)
-        velocity.y += GRAVITY * (radius / Ostracod::SIZE_RANGE.y);
-    else{
-        float buoyancy = 1.0f - (pos.y - ecosystem.waterSurfaceY) / ecosystem.waterLevel;
-        buoyancy += MIN_SAND_FALL;
-
-        if(velocity.y == 0.0f){
-            velocity.y = buoyancy;
-        }
-        velocity.y = std::min(buoyancy, velocity.y);
-    }
-
-    if(velocity.x == 0.0f && velocity.y == 0.0f){
-        if(!alive)
-            active = false;
-        return;
-    }
-
-    Vector2 nextPosition = VEC2(
-        pos.x + velocity.x,
-        pos.y + velocity.y
-    );
-
-    //Stop ostracods from leaving the aquarium
+void Ostracod::detectCollisions(vector<Sand> & sand, const Vector2 nextPosition){
+    //Collisions with the aquarium
     //Floor
     if(velocity.y > 0.0f && nextPosition.y + radius >= SCREEN_HEIGHT){
         velocity.y = 0.0f;
@@ -228,35 +229,97 @@ void Ostracod::update(Environment & ecosystem, vector<Algae> & algaes, vector<Sa
     for(const Sand & sandIt : sand){
         if(sandIt.active)
             continue;
+
         float distance = getDistance(nextPosition, sandIt.pos);
         if(distance <= radius + sandIt.radius){
             velocity.x = 0.0f;
             velocity.y = 0.0f;
+
+            //When there's a sand hill between this ostracod and algae:
+            //1. Move randomly to unstuck it.
+            //2. If ostracod didn't get unstuck, repeat 1., otherwise go to the surface.
+            //3. After reaching the surface come back to searching food.
+            if(searchForFood)
+                goInRandomDirection = true;
+
             break;
         }
     }
+}
 
-    //Eat one algae
-    if(alive && saturation < Ostracod::MAX_SATURATION){
-        if(eatingCooldown > 0)
-            --eatingCooldown;
+void Ostracod::eatAlgae(vector<Algae> & algaes){
+    if(alive && saturation < Ostracod::MAX_SATURATION)
+        return;
+
+    if(eatingCooldown > 0){
+        --eatingCooldown;
+        return;
+    }
+        
+    for(auto algaeIt = algaes.begin(); algaeIt != algaes.end();){
+        float distance = getDistance(pos, algaeIt->pos);
+        if(distance <= radius + algaeIt->radius){
+            algaeIt = algaes.erase(algaeIt);
+            saturation += SATURATION_FROM_ALGAE;
+            eatingCooldown = BASIC_EATING_COOLDOWN;
+            break;
+        }
         else{
-            for(auto algaeIt = algaes.begin(); algaeIt != algaes.end();){
-                float distance = getDistance(pos, algaeIt->pos);
-                if(distance <= radius + algaeIt->radius){
-                    algaeIt = algaes.erase(algaeIt);
-                    saturation += SATURATION_FROM_ALGAE;
-                    eatingCooldown = BASIC_EATING_COOLDOWN;
-                    break;
-                }
-                else{
-                    ++algaeIt;
-                }
-            }
+            ++algaeIt;
         }
     }
+}
 
+void Ostracod::applyGravityAndBuoyancy(Environment & ecosystem, bool isUnderwater){
+    if(!isUnderwater)
+        velocity.y += GRAVITY * (radius / Ostracod::SIZE_RANGE.y);
+    else{
+        float buoyancy = 1.0f - (pos.y - ecosystem.waterSurfaceY) / ecosystem.waterLevel;
+        buoyancy += MIN_SAND_FALL;
+
+        if(velocity.y == 0.0f){
+            velocity.y = buoyancy;
+        }
+        velocity.y = std::min(buoyancy, velocity.y);
+    }
+}
+
+void Ostracod::update(Environment & ecosystem, vector<Algae> & algaes, vector<Sand> & sand,
+    size_t &aliveOstracods
+){
+    if(!active)
+        return;
+
+    //Kill when starved to death
+    if(alive){
+        saturation -= Ostracod::BASIC_ENERGY_COST;
+        if(saturation <= 0)
+            alive = false;
+        else
+            ++aliveOstracods;
+    }
     
+    bool isUnderwater = pos.y >= ecosystem.waterSurfaceY;
+
+    move(ecosystem, algaes, isUnderwater);
+
+    applyGravityAndBuoyancy(ecosystem, isUnderwater);
+
+    //Deactivate dead ostracods when it's not moving to free some processing power
+    if(velocity.x == 0.0f && velocity.y == 0.0f){
+        if(!alive)
+            active = false;
+        return;
+    }
+
+    Vector2 nextPosition = VEC2(
+        pos.x + velocity.x,
+        pos.y + velocity.y
+    );
+
+    detectCollisions(sand, nextPosition);
+
+    eatAlgae(algaes);
 
     pos.x += velocity.x;
     pos.y += velocity.y;

@@ -53,9 +53,23 @@ public:
     float vision = 0.0f;
     float speed = 0.0f;
 
+    //Behavior flags
+    bool searchForFood = false;
+    bool goInRandomDirection = false;
+    bool goToWaterSurface = false;
+
     Ostracod();
     Algae* findNearestAlgae(vector<Algae> & algaes);
-    void decideToMove(Environment & ecosystem, vector<Algae> & algaes, bool underwater);
+    void thinkAboutTheNextMove(const Environment & ecosystem, vector<Algae> & algaes,
+        Entity*& visibleAlgae
+    );
+    void thinkAndMove(Environment & ecosystem, vector<Algae> & algaes, bool isUnderwater);
+    //Movement when alive or dead
+    void move(Environment & ecosystem, vector<Algae> & algaes, bool isUnderwater);
+    void detectCollisions(vector<Sand> & sand, const Vector2 nextPosition);
+    //Eat one algae
+    void eatAlgae(vector<Algae> & algaes);
+    void applyGravityAndBuoyancy(Environment & ecosystem, bool isUnderwater);
     void update(Environment & ecosystem, vector<Algae> & algaes, vector<Sand> & sand,
         size_t & aliveOstrecods
     );
