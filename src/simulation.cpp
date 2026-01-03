@@ -3,7 +3,7 @@
 Simulation::Simulation(){}
 
 void Simulation::spawnAlgae(){
-    if(IsKeyDown(KEY_ONE)){
+    if(IsKeyDown(SPAWN_ALGAE_BUTTON)){
         algaes.emplace_back();
     }
 }
@@ -13,19 +13,29 @@ void Simulation::updateAlgaes(){
     }
 }
 
-void Simulation::spawnSand(){
-    if(IsKeyDown(KEY_TWO)){
-        sand.emplace_back();
+void Simulation::spawnSoil(){
+    if(IsKeyDown(SPAWN_SOIL_BUTTON)){
+        substrate.emplace_back(SubstrateType::soil);
     }
 }
-void Simulation::updateSand(){
-    for(size_t sandIdx = 0; sandIdx < sand.size(); ++sandIdx){
-        sand[sandIdx].update(ecosystem, sand, sandIdx);
+void Simulation::spawnSand(){
+    if(IsKeyDown(SPAWN_SAND_BUTTON)){
+        substrate.emplace_back(SubstrateType::sand);
+    }
+}
+void Simulation::spawnGravel(){
+    if(IsKeyDown(SPAWN_GRAVEL_BUTTON)){
+        substrate.emplace_back(SubstrateType::gravel);
+    }
+}
+void Simulation::updateSubstrate(){
+    for(size_t substrateIdx = 0; substrateIdx < substrate.size(); ++substrateIdx){
+        substrate[substrateIdx].update(ecosystem, substrate, substrateIdx);
     }
 }
 
 void Simulation::spawnOstracods(){
-    if(IsKeyDown(KEY_THREE)){
+    if(IsKeyDown(SPAWN_OSTRACODS_BUTTON)){
         ostracods.emplace_back();
         ++totalOstracods;
     }
@@ -33,17 +43,19 @@ void Simulation::spawnOstracods(){
 void Simulation::updateOstracods(){
     aliveOstracods = 0;
     for(Ostracod & ostracodIt : ostracods){
-        ostracodIt.update(ecosystem, algaes, sand, aliveOstracods);
+        ostracodIt.update(ecosystem, algaes, substrate, aliveOstracods);
     }
-    printf("Alive: %lu / %lu\n", aliveOstracods, totalOstracods);
+    //printf("Alive: %lu / %lu\n", aliveOstracods, totalOstracods);
 }
 
 void Simulation::update(){
     updateAlgaes();
-    updateSand();
+    updateSubstrate();
     updateOstracods();
 
     spawnAlgae();
+    spawnSoil();
+    spawnGravel();
     spawnSand();
     spawnOstracods();
 }
@@ -53,11 +65,23 @@ void Simulation::draw() const {
     for(const Algae & algaeIt : algaes){
         DrawCircle(algaeIt.pos.x, algaeIt.pos.y, algaeIt.radius, GREEN); 
     }
-    for(const Sand & sandIt : sand){
-        DrawCircle(sandIt.pos.x, sandIt.pos.y, sandIt.radius, YELLOW); 
+    for(const Substrate & substrateIt : substrate){
+        switch (substrateIt.type){
+        case SubstrateType::soil:
+            DrawCircle(substrateIt.pos.x, substrateIt.pos.y, substrateIt.radius, BLACK);
+            break;
+        case SubstrateType::sand:
+            DrawCircle(substrateIt.pos.x, substrateIt.pos.y, substrateIt.radius, YELLOW);
+            break;
+        case SubstrateType::gravel:
+            DrawCircle(substrateIt.pos.x, substrateIt.pos.y, substrateIt.radius, DARKGRAY);
+            break;
+        default:
+            break;
+        }
     }
     for(const Ostracod & ostracodIt : ostracods){
         //DrawCircleLines(ostracod.pos.x, ostracod.pos.y, ostracod.vision, BLACK); 
-        DrawCircle(ostracodIt.pos.x, ostracodIt.pos.y, ostracodIt.radius, DARKGRAY); 
+        DrawCircle(ostracodIt.pos.x, ostracodIt.pos.y, ostracodIt.radius, GRAY); 
     }
 }

@@ -1,4 +1,7 @@
 #include "simulation.hpp"
+#include <string>
+
+using std::string;
 
 void update(Simulation & simulation){
     simulation.update();
@@ -11,7 +14,13 @@ void draw(const Simulation & simulation){
 
     simulation.draw();
 
-    DrawText("Press 1 to spawn algae\nPress 2 to spawn sand\nPress 3 to spawn ostracod", 5, 5, 20, BLACK);
+    string tutorial = "1) algae "
+        "2) soil "
+        "3) gravel "
+        "4) sand "
+        "5) ostracods";
+
+    DrawText(tutorial.c_str(), 5, 5, 20, BLACK);
 
     EndDrawing();
 }

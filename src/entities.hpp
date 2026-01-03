@@ -22,12 +22,16 @@ public:
     void update(float waterSurfaceY);
 };
 
-class Sand: public Entity{
+enum class SubstrateType {soil, sand, gravel};
+
+class Substrate: public Entity{
     constexpr static Vector2 SIZE_RANGE = VEC2(2.0f, 8.0f);
 public:
-    Sand();
+    SubstrateType type = SubstrateType::soil;
+
+    Substrate(SubstrateType substrateType);
     void settle();
-    void update(Environment & ecosystem, vector<Sand> & sand, size_t currentSandIdx);
+    void update(Environment & ecosystem, vector<Substrate> & substrate, size_t currentSandIdx);
 };
 
 class Ostracod: public Entity{
@@ -66,11 +70,11 @@ public:
     void thinkAndMove(Environment & ecosystem, vector<Algae> & algaes, bool isUnderwater);
     //Movement when alive or dead
     void move(Environment & ecosystem, vector<Algae> & algaes, bool isUnderwater);
-    void detectCollisions(vector<Sand> & sand, const Vector2 nextPosition);
+    void detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition);
     //Eat one algae
     void eatAlgae(vector<Algae> & algaes);
     void applyGravityAndBuoyancy(Environment & ecosystem, bool isUnderwater);
-    void update(Environment & ecosystem, vector<Algae> & algaes, vector<Sand> & sand,
+    void update(Environment & ecosystem, vector<Algae> & algaes, vector<Substrate> & substrate,
         size_t & aliveOstrecods
     );
 };

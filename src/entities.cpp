@@ -19,26 +19,27 @@ void Algae::update(float waterSurfaceY){
     pos.y += velocity.y;
 }
 
-Sand::Sand(){
+Substrate::Substrate(SubstrateType substrateType){
+    type = substrateType;
     active = true;
     pos = GetMousePosition();
     velocity = VEC2(0.0f, 0.0f);
-    radius = randomBetween(Sand::SIZE_RANGE.x, Sand::SIZE_RANGE.y);
+    radius = randomBetween(Substrate::SIZE_RANGE.x, Substrate::SIZE_RANGE.y);
 }
 
-void Sand::settle(){
+void Substrate::settle(){
     velocity.y = 0.0f;
     active = false;
 }
 
-void Sand::update(Environment & ecosystem, vector<Sand> & sand, size_t currentSandIdx){
+void Substrate::update(Environment & ecosystem, vector<Substrate> & substrate, size_t currentSandIdx){
     if(!active){
         return;
     }
 
     //Gravity and buoyancy
     if(pos.y < ecosystem.waterSurfaceY){
-        velocity.y += GRAVITY * (radius / Sand::SIZE_RANGE.y);
+        velocity.y += GRAVITY * (radius / Substrate::SIZE_RANGE.y);
     }
     else{
         float buoyancy = 1.0f - (pos.y - ecosystem.waterSurfaceY) / ecosystem.waterLevel;
@@ -50,26 +51,26 @@ void Sand::update(Environment & ecosystem, vector<Sand> & sand, size_t currentSa
         velocity.y = std::min(buoyancy, velocity.y);
     }
 
-    //When sand particles hit the ground, stop them.
+    //When substrate particles hit the ground, stop them.
     if(pos.y + radius >= SCREEN_HEIGHT){
         settle();
         return;
     }
 
-    //Check simple collisions between falling (active) and settled sand particles
+    //Check simple collisions between falling (active) and settled substrate particles
     if(velocity.y > 0){
         bool collisionOnTheLeft = false;
         bool collisionOnTheRight = false;
-        for(size_t other = 0; other < sand.size(); ++other){
-            //Ignore itself and other falling sand particles
-            if(other == currentSandIdx || sand[other].active)
+        for(size_t other = 0; other < substrate.size(); ++other){
+            //Ignore itself and other falling substrate particles
+            if(other == currentSandIdx || substrate[other].active)
                 continue;
 
-            float distance = getDistance(pos, sand[other].pos);
-            if(distance > radius + sand[other].radius)
+            float distance = getDistance(pos, substrate[other].pos);
+            if(distance > radius + substrate[other].radius)
                 continue;
 
-            if(sand[other].pos.x <= pos.x)
+            if(substrate[other].pos.x <= pos.x)
                 collisionOnTheLeft = true;
             else
                 collisionOnTheRight = true;
@@ -210,7 +211,7 @@ void Ostracod::move(Environment & ecosystem, vector<Algae> & algaes, bool isUnde
     limitVector(velocity, SPEED_LIMIT);
 }
 
-void Ostracod::detectCollisions(vector<Sand> & sand, const Vector2 nextPosition){
+void Ostracod::detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition){
     //Collisions with the aquarium
     //Floor
     if(velocity.y > 0.0f && nextPosition.y + radius >= SCREEN_HEIGHT){
@@ -225,17 +226,17 @@ void Ostracod::detectCollisions(vector<Sand> & sand, const Vector2 nextPosition)
         velocity.x = 0.0f;
     }
 
-    //Collisions with sand
-    for(const Sand & sandIt : sand){
-        if(sandIt.active)
+    //Collisions with substrate
+    for(const Substrate & substrateIt : substrate){
+        if(substrateIt.active)
             continue;
 
-        float distance = getDistance(nextPosition, sandIt.pos);
-        if(distance <= radius + sandIt.radius){
+        float distance = getDistance(nextPosition, substrateIt.pos);
+        if(distance <= radius + substrateIt.radius){
             velocity.x = 0.0f;
             velocity.y = 0.0f;
 
-            //When there's a sand hill between this ostracod and algae:
+            //When there's a substrate obstacle between this ostracod and algae:
             //1. Move randomly to unstuck it.
             //2. If ostracod didn't get unstuck, repeat 1., otherwise go to the surface.
             //3. After reaching the surface come back to searching food.
@@ -284,8 +285,8 @@ void Ostracod::applyGravityAndBuoyancy(Environment & ecosystem, bool isUnderwate
     }
 }
 
-void Ostracod::update(Environment & ecosystem, vector<Algae> & algaes, vector<Sand> & sand,
-    size_t &aliveOstracods
+void Ostracod::update(Environment & ecosystem, vector<Algae> & algaes,
+    vector<Substrate> & substrate, size_t &aliveOstracods
 ){
     if(!active)
         return;
@@ -317,7 +318,7 @@ void Ostracod::update(Environment & ecosystem, vector<Algae> & algaes, vector<Sa
         pos.y + velocity.y
     );
 
-    detectCollisions(sand, nextPosition);
+    detectCollisions(substrate, nextPosition);
 
     eatAlgae(algaes);
 
