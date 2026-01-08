@@ -19,7 +19,7 @@ void draw(const Simulation & simulation){
         "3) gravel "
         "4) sand "
         "5) ostracods "
-        "6) plants";
+        "6) seeds";
 
     DrawText(tutorial.c_str(), 5, 5, 20, BLACK);
 
