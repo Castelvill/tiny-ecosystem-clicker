@@ -19,3 +19,26 @@ void limitVector(Vector2 & vector, float limit){
 float randomBetween(float min, float max){
     return min + ((rand() % 10001) / 10000.0f) * (max - min);
 }
+
+float randomBetween(Vector2 range){
+    return range.x + ((rand() % 10001) / 10000.0f) * (range.y - range.x);
+}
+
+int randomBetween(int min, int max){
+    return min + rand() % (1 + max - min);
+}
+
+int randomBetween(IntRange range){
+    return range.min + rand() % (1 + range.max - range.min);
+}
+
+Vector2 angleToVector(float theta){
+    return VEC2(std::cos(theta), std::sin(theta));
+}
+
+Vector2 operator*(Vector2 lhs, float rhs){
+    return VEC2(
+        lhs.x * rhs,
+        lhs.y * rhs
+    );
+}

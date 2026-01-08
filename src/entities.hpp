@@ -13,6 +13,9 @@ public:
     Vector2 pos = VEC2(0.0f, 0.0f);;
     Vector2 velocity = VEC2(0.0f, 0.0f);;
     float radius = 1.0f;
+    bool checkIfUnderwater(Environment & environment);
+    void applyGravityAndBuoyancy(Environment & environment, bool isUnderwater, float mass);
+    void detectCollisionWithAquarium(const Vector2 nextPosition);
 };
 
 class Algae: public Entity{
@@ -31,7 +34,7 @@ public:
 
     Substrate(SubstrateType substrateType);
     void settle();
-    void update(Environment & ecosystem, vector<Substrate> & substrate, size_t currentSandIdx);
+    void update(Environment & environment, vector<Substrate> & substrate, size_t currentSandIdx);
 };
 
 class Ostracod: public Entity{
@@ -64,17 +67,16 @@ public:
 
     Ostracod();
     Algae* findNearestAlgae(vector<Algae> & algaes);
-    void thinkAboutTheNextMove(const Environment & ecosystem, vector<Algae> & algaes,
+    void thinkAboutTheNextMove(const Environment & environment, vector<Algae> & algaes,
         Entity*& visibleAlgae
     );
-    void thinkAndMove(Environment & ecosystem, vector<Algae> & algaes, bool isUnderwater);
+    void thinkAndMove(Environment & environment, vector<Algae> & algaes, bool isUnderwater);
     //Movement when alive or dead
-    void move(Environment & ecosystem, vector<Algae> & algaes, bool isUnderwater);
+    void move(Environment & environment, vector<Algae> & algaes, bool isUnderwater);
     void detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition);
     //Eat one algae
     void eatAlgae(vector<Algae> & algaes);
-    void applyGravityAndBuoyancy(Environment & ecosystem, bool isUnderwater);
-    void update(Environment & ecosystem, vector<Algae> & algaes, vector<Substrate> & substrate,
+    void update(Environment & environment, vector<Algae> & algaes, vector<Substrate> & substrate,
         size_t & aliveOstrecods
     );
 };
