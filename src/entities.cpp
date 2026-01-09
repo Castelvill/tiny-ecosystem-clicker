@@ -32,6 +32,38 @@ void Substrate::settle(){
     active = false;
 }
 
+SimpleCollisionType Substrate::checkFallingCollision(const Entity & movingEntity,
+    const vector<Substrate> & substrate
+){
+    if(movingEntity.velocity.y <= 0)
+        return SimpleCollisionType::none;
+
+    bool collisionOnTheLeft = false;
+    bool collisionOnTheRight = false;
+    for(const Entity & solid : substrate){
+        //Ignore itself and other falling substrate particles
+        if(movingEntity.pos == solid.pos || solid.active)
+            continue;
+
+        float distance = getDistance(movingEntity.pos, solid.pos);
+        if(distance > movingEntity.radius + solid.radius)
+            continue;
+
+        if(solid.pos.x <= movingEntity.pos.x)
+            collisionOnTheLeft = true;
+        else
+            collisionOnTheRight = true;
+
+        if(collisionOnTheLeft && collisionOnTheRight)
+            return SimpleCollisionType::full;
+    }
+    if(collisionOnTheLeft)
+        return SimpleCollisionType::left;
+    if(collisionOnTheRight)
+        return SimpleCollisionType::right;
+    return SimpleCollisionType::none;
+}
+
 void Substrate::update(Environment & environment, vector<Substrate> & substrate,
     size_t currentSandIdx
 ){
@@ -60,35 +92,19 @@ void Substrate::update(Environment & environment, vector<Substrate> & substrate,
     }
 
     //Check simple collisions between falling (active) and settled substrate particles
-    if(velocity.y > 0){
-        bool collisionOnTheLeft = false;
-        bool collisionOnTheRight = false;
-        for(size_t other = 0; other < substrate.size(); ++other){
-            //Ignore itself and other falling substrate particles
-            if(other == currentSandIdx || substrate[other].active)
-                continue;
-
-            float distance = getDistance(pos, substrate[other].pos);
-            if(distance > radius + substrate[other].radius)
-                continue;
-
-            if(substrate[other].pos.x <= pos.x)
-                collisionOnTheLeft = true;
-            else
-                collisionOnTheRight = true;
-
-            if(collisionOnTheLeft && collisionOnTheRight)
-                break;
-        }
-
-        if(collisionOnTheLeft && collisionOnTheRight){
+    SimpleCollisionType collisionType = checkFallingCollision(*this, substrate);
+    switch (collisionType){
+        case SimpleCollisionType::full:
             settle();
             return;
-        }
-        else if(collisionOnTheLeft)
+        case SimpleCollisionType::left:
             pos.x += 1.0f;
-        else if(collisionOnTheRight)
+            break;
+        case SimpleCollisionType::right:
             pos.x -= 1.0f;
+            break;
+        default:
+            break;
     }
 
     pos.y += velocity.y;
@@ -224,27 +240,17 @@ void Entity::detectCollisionWithAquarium(const Vector2 nextPosition){
     }
 }
 
-void Ostracod::detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition){
+bool Ostracod::detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition){
     //Collisions with substrate
     for(const Substrate & substrateIt : substrate){
         if(substrateIt.active)
             continue;
 
         float distance = getDistance(nextPosition, substrateIt.pos);
-        if(distance <= radius + substrateIt.radius){
-            velocity.x = 0.0f;
-            velocity.y = 0.0f;
-
-            //When there's a substrate obstacle between this ostracod and algae:
-            //1. Move randomly to unstuck it.
-            //2. If ostracod didn't get unstuck, repeat 1., otherwise go to the surface.
-            //3. After reaching the surface come back to searching food.
-            if(searchForFood)
-                goInRandomDirection = true;
-
-            break;
-        }
+        if(distance <= radius + substrateIt.radius)
+            return true;
     }
+    return false;
 }
 
 void Ostracod::eatAlgae(vector<Algae> & algaes){
@@ -320,7 +326,16 @@ void Ostracod::update(Environment & environment, vector<Algae> & algaes,
         pos.y + velocity.y
     );
 
-    detectCollisions(substrate, nextPosition);
+    if(detectCollisions(substrate, nextPosition)){
+        velocity.x = 0.0f;
+        velocity.y = 0.0f;
+        //When there's a substrate obstacle between this ostracod and algae:
+        //1. Move randomly to unstuck it.
+        //2. If ostracod didn't get unstuck, repeat 1., otherwise go to the surface.
+        //3. After reaching the surface come back to searching food.
+        if(searchForFood)
+            goInRandomDirection = true;
+    }
 
     eatAlgae(algaes);
 

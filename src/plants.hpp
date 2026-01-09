@@ -49,7 +49,6 @@ class Plant: public Entity{
     constexpr static Vector2 SEED_SIZE_RANGE = VEC2(2.0f, 8.0f);
     constexpr static Vector2 STEM_RADIUS_RANGE = VEC2(3.0f, 4.0f);
 
-    
     //Distance from the parent body part
     float length = 0.0f;
     bool isMoving = true;
@@ -65,9 +64,9 @@ public:
     Plant();
     Plant(PlantPartType plantPart, Plant parent, size_t newIdx, int maxBranches, int branchIdx);
     void initSeed(Vector2 newPos, size_t newIdx);
-    void moveSeed(Environment & environment);
+    void moveSeed(Environment & environment, vector<Substrate> & substrate);
     void growSeed();
-    void updateSeed(Environment & environment);
+    void updateSeed(Environment & environment, vector<Substrate> & substrate);
     void updateStem(Environment & environment);
     void updateRoot(Environment & environment);
     void update(Environment & environment, vector<Substrate> & substrate);

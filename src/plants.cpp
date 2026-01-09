@@ -90,7 +90,7 @@ Plant::Plant(PlantPartType plantPart, Plant parent, size_t newIdx, int maxBranch
     }
 }
 
-void Plant::moveSeed(Environment & environment){
+void Plant::moveSeed(Environment & environment, vector<Substrate> & substrate){
     bool isUnderwater = checkIfUnderwater(environment);
     applyGravityAndBuoyancy(environment, isUnderwater, radius / Plant::SEED_SIZE_RANGE.y);
 
@@ -98,6 +98,24 @@ void Plant::moveSeed(Environment & environment){
         pos.x + velocity.x,
         pos.y + velocity.y
     );
+
+    //Check simple collisions between falling (active) and settled substrate particles
+    SimpleCollisionType collisionType = Substrate::checkFallingCollision(*this, substrate);
+    switch (collisionType){
+        case SimpleCollisionType::full:
+            velocity.x = 0.0;
+            velocity.y = 0.0;
+            isMoving = false;
+            return;
+        case SimpleCollisionType::left:
+            pos.x += 1.0f;
+            break;
+        case SimpleCollisionType::right:
+            pos.x -= 1.0f;
+            break;
+        default:
+            break;
+    }
 
     detectCollisionWithAquarium(nextPosition);
 
@@ -117,9 +135,9 @@ void Plant::growSeed(){
     growNewParts = true;
 }
 
-void Plant::updateSeed(Environment & environment){
+void Plant::updateSeed(Environment & environment, vector<Substrate> & substrate){
     if(isMoving)
-        moveSeed(environment);
+        moveSeed(environment, substrate);
     else
         growSeed();
 }
@@ -151,7 +169,7 @@ void Plant::update(Environment & environment, vector<Substrate> & substrate){
         return;
     switch (type){
         case PlantPartType::seed:
-            updateSeed(environment);
+            updateSeed(environment, substrate);
             break;
         case PlantPartType::stem:
             updateStem(environment);

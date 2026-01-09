@@ -27,9 +27,15 @@ public:
 
 enum class SubstrateType {soil, sand, gravel};
 
+enum class SimpleCollisionType {none, left, right, full};
+
 class Substrate: public Entity{
     constexpr static Vector2 SIZE_RANGE = VEC2(2.0f, 8.0f);
 public:
+    static SimpleCollisionType checkFallingCollision(const Entity & movingEntity,
+        const vector<Substrate> & substrate
+    );
+
     SubstrateType type = SubstrateType::soil;
 
     Substrate(SubstrateType substrateType);
@@ -73,7 +79,7 @@ public:
     void thinkAndMove(Environment & environment, vector<Algae> & algaes, bool isUnderwater);
     //Movement when alive or dead
     void move(Environment & environment, vector<Algae> & algaes, bool isUnderwater);
-    void detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition);
+    bool detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition);
     //Eat one algae
     void eatAlgae(vector<Algae> & algaes);
     void update(Environment & environment, vector<Algae> & algaes, vector<Substrate> & substrate,

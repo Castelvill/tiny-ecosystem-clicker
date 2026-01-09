@@ -25,3 +25,5 @@ int randomBetween(IntRange range);
 Vector2 angleToVector(float theta);
 
 Vector2 operator*(Vector2 lhs, float rhs);
+
+bool operator==(Vector2 lhs, Vector2 rhs);
