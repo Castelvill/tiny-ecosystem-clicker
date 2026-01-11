@@ -1,0 +1,121 @@
+#include "gui.hpp"
+
+UserInterface::UserInterface(){
+    waterTexture = LoadTexture("images/water.png");
+    removeWaterTexture = LoadTexture("images/spill_water.png");
+    algaeTexture = LoadTexture("images/algae.png");
+    sandTexture = LoadTexture("images/sand.png");
+    soilTexture = LoadTexture("images/soil.png");
+    gravelTexture = LoadTexture("images/gravel.png");
+    ostracodTexture = LoadTexture("images/ostracod.png");
+    seedTexture = LoadTexture("images/seed.png");
+}
+
+UserInterface::~UserInterface(){
+    UnloadTexture(waterTexture);
+    UnloadTexture(removeWaterTexture);
+    UnloadTexture(algaeTexture);
+    UnloadTexture(sandTexture);
+    UnloadTexture(soilTexture);
+    UnloadTexture(gravelTexture);
+    UnloadTexture(ostracodTexture);
+    UnloadTexture(seedTexture);
+}
+
+Vector2 UserInterface::getSlotPos(int slotIdx) const {
+    return {
+        INVENTORY_POS.x + 5 + slotIdx * (INVENTORY_SLOT_SIZE.x + SPACE_BETWEEN_SLOTS),
+        INVENTORY_POS.y + 5
+    };
+}
+
+void UserInterface::update(PlayerState & player){
+    if(IsMouseButtonPressed(0)){
+        Vector2 mousePos = GetMousePosition();
+        for(int slotIdx = 0; slotIdx < MAX_SLOT_NUMBER; ++slotIdx){
+            Vector2 slotPos = getSlotPos(slotIdx);
+            if(detectButtonCollision(mousePos, slotPos, INVENTORY_SLOT_SIZE)){
+                selectedInventorySlotIdx = slotIdx;
+                break;
+            }
+        }
+
+        //Clicking and leveling
+        bool isMouseInAquarium = mousePos.y > GUI_HEIGHT;
+        if(isMouseInAquarium){
+            player.addExperience(1);
+                player.loadingIndicatorAngle += 10.0f;
+            if(player.loadingIndicatorAngle >= 360.0f)
+                player.loadingIndicatorAngle = 0.0f;
+        }
+    }
+    player.updateExperienceBar();
+}
+
+void UserInterface::drawInventory(const PlayerState & player) const {
+    //Inventory bar
+    DrawRectangleV(INVENTORY_POS, {SCREEN_WIDTH, INVENTORY_BAR_SIZE.y}, INVENTORY_BAR_COLOR);
+    //Inventory slots
+    for(int slotIdx = 0; slotIdx < MAX_SLOT_NUMBER; ++slotIdx){
+        Vector2 slotPos = getSlotPos(slotIdx);
+        if(selectedInventorySlotIdx == slotIdx){
+            DrawRectangleV({slotPos.x-5, slotPos.y-5}, INVENTORY_BAR_SIZE,
+                SELECTED_INVENTORY_SLOT_COLOR
+            );
+        }
+        DrawRectangleGradientV(slotPos.x, slotPos.y, INVENTORY_SLOT_SIZE.x, INVENTORY_SLOT_SIZE.y,
+            RAYWHITE, INVENTORY_SLOT_BACKGROUND
+        );
+        //Drawing icons
+        switch (slotIdx){
+            case InventorySlots::slotWater: 
+                DrawTextureV(waterTexture, slotPos, WHITE);
+                break;
+            case InventorySlots::slotRemoveWater: 
+                DrawTextureV(removeWaterTexture, slotPos, WHITE);
+                break;
+            case InventorySlots::slotAlgae: 
+                DrawTextureV(algaeTexture, slotPos, WHITE);
+                break;
+            case InventorySlots::slotSoil: 
+                DrawTextureV(soilTexture, slotPos, WHITE);
+                break;
+            case InventorySlots::slotGravel: 
+                DrawTextureV(gravelTexture, slotPos, WHITE);
+                break;
+            case InventorySlots::slotSand: 
+                DrawTextureV(sandTexture, slotPos, WHITE);
+                break;
+            case InventorySlots::slotOstracod: 
+                DrawTextureV(ostracodTexture, slotPos, WHITE);
+                break;
+            case InventorySlots::slotSeed: 
+                DrawTextureV(seedTexture, slotPos, WHITE);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void UserInterface::drawLevelBar(const PlayerState & player) const {
+    Vector2 levelBarPos = VEC2(0, INVENTORY_BAR_SIZE.y);
+    DrawRectangleV(levelBarPos, VEC2(SCREEN_WIDTH, 30), { 153, 50, 30, 255 } );
+    DrawRectangleV(levelBarPos, VEC2(player.slowedDownXpBarLength, 30), YELLOW);
+    string levelText = "Level " + intToStr(player.level);
+    DrawText(levelText.c_str(), levelBarPos.x + 5, levelBarPos.y + 5, 20, BLACK);
+}
+
+void UserInterface::draw(const PlayerState & player) const {
+    drawInventory(player);
+    drawLevelBar(player);
+    
+    //TODO: Remove it or use it
+    //Loading indicator
+    //DrawCircleGradient(mousePos.x, mousePos.y, 20, {255, 255, 255, 155}, { 255, 109, 194, 155 });
+    // Vector2 mousePos = GetMousePosition();
+    // if(mousePos.y > GUI_HEIGHT)
+    //     DrawCircleSector(mousePos, 20, 0.0f, player.loadingIndicatorAngle,
+    //         20.0f, {255, 109, 194, 155}
+    //     );
+}

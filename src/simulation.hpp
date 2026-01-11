@@ -1,11 +1,4 @@
-#include "plants.hpp"
-
-const int SPAWN_ALGAE_BUTTON = KEY_ONE;
-const int SPAWN_SOIL_BUTTON = KEY_TWO;
-const int SPAWN_GRAVEL_BUTTON = KEY_THREE;
-const int SPAWN_SAND_BUTTON = KEY_FOUR;
-const int SPAWN_OSTRACODS_BUTTON = KEY_FIVE;
-const int SPAWN_SEED_BUTTON = KEY_SIX;
+#include "gui.hpp"
 
 class Simulation{
     Environment environment;
@@ -18,6 +11,7 @@ class Simulation{
     size_t aliveOstracods = 0;
 public:
     Simulation();
+    ~Simulation();
 
     void spawnAlgae();
     void updateAlgaes();
@@ -34,6 +28,6 @@ public:
     void spawnSeed();
     void updatePlants();
 
-    void update();
+    void update(const UserInterface & gui);
     void draw() const;
 };

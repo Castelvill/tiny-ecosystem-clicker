@@ -2,10 +2,10 @@
 
 Simulation::Simulation(){}
 
+Simulation::~Simulation(){}
+
 void Simulation::spawnAlgae(){
-    if(IsKeyDown(SPAWN_ALGAE_BUTTON)){
-        algaes.emplace_back();
-    }
+    algaes.emplace_back();
 }
 void Simulation::updateAlgaes(){
     for(Algae & algaeIt : algaes){
@@ -14,19 +14,13 @@ void Simulation::updateAlgaes(){
 }
 
 void Simulation::spawnSoil(){
-    if(IsKeyDown(SPAWN_SOIL_BUTTON)){
-        substrate.emplace_back(SubstrateType::soil);
-    }
+    substrate.emplace_back(SubstrateType::soil);
 }
 void Simulation::spawnSand(){
-    if(IsKeyDown(SPAWN_SAND_BUTTON)){
-        substrate.emplace_back(SubstrateType::sand);
-    }
+    substrate.emplace_back(SubstrateType::sand);
 }
 void Simulation::spawnGravel(){
-    if(IsKeyDown(SPAWN_GRAVEL_BUTTON)){
-        substrate.emplace_back(SubstrateType::gravel);
-    }
+    substrate.emplace_back(SubstrateType::gravel);
 }
 void Simulation::updateSubstrate(){
     for(size_t substrateIdx = 0; substrateIdx < substrate.size(); ++substrateIdx){
@@ -35,10 +29,8 @@ void Simulation::updateSubstrate(){
 }
 
 void Simulation::spawnOstracod(){
-    if(IsKeyDown(SPAWN_OSTRACODS_BUTTON)){
-        ostracods.emplace_back();
-        ++totalOstracods;
-    }
+    ostracods.emplace_back();
+    ++totalOstracods;
 }
 void Simulation::updateOstracods(){
     aliveOstracods = 0;
@@ -49,10 +41,8 @@ void Simulation::updateOstracods(){
 }
 
 void Simulation::spawnSeed(){
-    if(IsKeyReleased(SPAWN_SEED_BUTTON)){
-        plants.emplace_back(Plant());
-        plants.back().initSeed(GetMousePosition(), plants.size()-1);
-    }
+    plants.emplace_back(Plant());
+    plants.back().initSeed(GetMousePosition(), plants.size()-1);
 }
 
 //Parent must be a copy, because plants vector will grow
@@ -86,18 +76,48 @@ void Simulation::updatePlants(){
     }
 }
 
-void Simulation::update(){
+void Simulation::update(const UserInterface & gui){
     updateAlgaes();
     updateSubstrate();
     updateOstracods();
     updatePlants();
 
-    spawnAlgae();
-    spawnSoil();
-    spawnGravel();
-    spawnSand();
-    spawnOstracod();
-    spawnSeed();
+    if(GetMousePosition().y > gui.GUI_HEIGHT && IsMouseButtonPressed(0)){
+        switch (gui.selectedInventorySlotIdx){
+            case InventorySlots::slotWater:
+                if(environment.waterLevel < MAX_WATER_LEVEL){
+                    ++environment.waterLevel;
+                    environment.updateWaterSurfaceY();
+                }
+                break;
+            case InventorySlots::slotRemoveWater: 
+                if(environment.waterLevel > MIN_WATER_LEVEL){
+                    --environment.waterLevel;
+                    environment.updateWaterSurfaceY();
+                }
+                break;
+            case InventorySlots::slotAlgae: 
+                spawnAlgae();
+                break;
+            case InventorySlots::slotSoil: 
+                spawnSoil();
+                break;
+            case InventorySlots::slotGravel: 
+                spawnGravel();
+                break;
+            case InventorySlots::slotSand: 
+                spawnSand();
+                break;
+            case InventorySlots::slotOstracod: 
+                spawnOstracod();
+                break;
+            case InventorySlots::slotSeed: 
+                spawnSeed();
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 void Simulation::draw() const {

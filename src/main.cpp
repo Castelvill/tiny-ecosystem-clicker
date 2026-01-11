@@ -1,36 +1,32 @@
 #include "simulation.hpp"
-#include <string>
 
-using std::string;
+struct GameState{
+    Simulation simulation;
+    PlayerState player;
+    UserInterface gui;
+};
 
-void update(Simulation & simulation){
-    simulation.update();
+void update(GameState & gameState){
+    gameState.gui.update(gameState.player);
+    gameState.simulation.update(gameState.gui);
 }
 
-void draw(const Simulation & simulation){
+void draw(const GameState & gameState){
     BeginDrawing();
 
     ClearBackground(RAYWHITE);
 
-    simulation.draw();
-
-    string tutorial = "1) algae "
-        "2) soil "
-        "3) gravel "
-        "4) sand "
-        "5) ostracods "
-        "6) seeds";
-
-    DrawText(tutorial.c_str(), 5, 5, 20, BLACK);
+    gameState.simulation.draw();
+    gameState.gui.draw(gameState.player);
 
     EndDrawing();
 }
 
 void mainLoop(){
-    Simulation simulation;
+    GameState gameState;
     while(!WindowShouldClose()){ //Detect window close button or ESC key
-        update(simulation);
-        draw(simulation);
+        update(gameState);
+        draw(gameState);
     }
 }
 

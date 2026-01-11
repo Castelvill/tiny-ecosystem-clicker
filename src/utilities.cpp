@@ -36,6 +36,20 @@ Vector2 angleToVector(float theta){
     return VEC2(std::cos(theta), std::sin(theta));
 }
 
+Vector2 operator+(Vector2 lhs, float rhs){
+    return VEC2(
+        lhs.x + rhs,
+        lhs.y + rhs
+    );
+}
+
+Vector2 operator-(Vector2 lhs, float rhs){
+    return VEC2(
+        lhs.x - rhs,
+        lhs.y - rhs
+    );
+}
+
 Vector2 operator*(Vector2 lhs, float rhs){
     return VEC2(
         lhs.x * rhs,
@@ -43,6 +57,28 @@ Vector2 operator*(Vector2 lhs, float rhs){
     );
 }
 
+Vector2 operator/(Vector2 lhs, float rhs){
+    return VEC2(
+        lhs.x / rhs,
+        lhs.y / rhs
+    );
+}
+
 bool operator==(Vector2 lhs, Vector2 rhs){
     return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+
+Vector2 operator+(Vector2 lhs, Vector2 rhs){
+    return {lhs.x + rhs.x, lhs.y + rhs.y};
+}
+
+string intToStr(int integer){
+    char buff[11];
+    sprintf(buff, "%d", integer);
+    return buff;
+}
+
+bool detectButtonCollision(Vector2 mousePos, Vector2 buttonPos, Vector2 buttonSize){
+    return mousePos.x >= buttonPos.x && mousePos.x <= buttonPos.x + buttonSize.x
+        && mousePos.y >= buttonPos.y && mousePos.y <= buttonPos.y + buttonSize.y;
 }
