@@ -33,7 +33,9 @@ void mainLoop(){
 int main(){
     srand(time(NULL));
     SetConfigFlags(FLAG_MSAA_4X_HINT);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Tiny Ecosystem Clicker");
+    SetWindowMinSize(MIN_SCREEN_WIDTH, MIN_SCREEN_HEIGHT);
     SetTargetFPS(60);
 
     mainLoop();

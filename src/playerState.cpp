@@ -22,8 +22,9 @@ void PlayerState::addExperience(int experiencePoints){
     }
 }
 
-void PlayerState::updateExperienceBar(){
-    int realXpBarLength = (SCREEN_WIDTH * xp) / currentXpCap;
+void PlayerState::updateExperienceBar(float currentScreenWidth){
+    float realXpBarLength = (currentScreenWidth * xp) / currentXpCap;
     if(slowedDownXpBarLength < realXpBarLength)
         slowedDownXpBarLength += std::max(0.2f, (realXpBarLength - slowedDownXpBarLength) * 0.1f);
+    slowedDownXpBarLength = std::min(slowedDownXpBarLength, realXpBarLength);
 }

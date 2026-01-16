@@ -9,6 +9,7 @@ UserInterface::UserInterface(){
     gravelTexture = LoadTexture("images/gravel.png");
     ostracodTexture = LoadTexture("images/ostracod.png");
     seedTexture = LoadTexture("images/seed.png");
+    settingsTexture = LoadTexture("images/settings.png");
 }
 
 UserInterface::~UserInterface(){
@@ -20,18 +21,26 @@ UserInterface::~UserInterface(){
     UnloadTexture(gravelTexture);
     UnloadTexture(ostracodTexture);
     UnloadTexture(seedTexture);
+    UnloadTexture(settingsTexture);
 }
 
 Vector2 UserInterface::getSlotPos(int slotIdx) const {
     return {
-        INVENTORY_POS.x + 5 + slotIdx * (INVENTORY_SLOT_SIZE.x + SPACE_BETWEEN_SLOTS),
-        INVENTORY_POS.y + 5
+        INVENTORY_POS.x + BASIC_PADDING + slotIdx * (INVENTORY_SLOT_SIZE.x + SPACE_BETWEEN_SLOTS),
+        INVENTORY_POS.y + BASIC_PADDING
     };
 }
 
 void UserInterface::update(PlayerState & player){
-    if(IsMouseButtonPressed(0)){
-        Vector2 mousePos = GetMousePosition();
+    if(IsWindowResized())
+        screenSize = {float(GetScreenWidth()), float(GetScreenHeight())};
+
+    Vector2 mousePos = GetMousePosition();
+    if(IsMouseButtonPressed(0)
+        //Temporary guardrails until proper aquariums are added
+        && mousePos.x < SCREEN_WIDTH 
+        && mousePos.y < SCREEN_HEIGHT
+    ){
         for(int slotIdx = 0; slotIdx < MAX_SLOT_NUMBER; ++slotIdx){
             Vector2 slotPos = getSlotPos(slotIdx);
             if(detectButtonCollision(mousePos, slotPos, INVENTORY_SLOT_SIZE)){
@@ -49,12 +58,12 @@ void UserInterface::update(PlayerState & player){
                 player.loadingIndicatorAngle = 0.0f;
         }
     }
-    player.updateExperienceBar();
+    player.updateExperienceBar(screenSize.x);
 }
 
 void UserInterface::drawInventory(const PlayerState & player) const {
     //Inventory bar
-    DrawRectangleV(INVENTORY_POS, {SCREEN_WIDTH, INVENTORY_BAR_SIZE.y}, INVENTORY_BAR_COLOR);
+    DrawRectangleV(INVENTORY_POS, {screenSize.x, INVENTORY_BAR_SIZE.y}, INVENTORY_BAR_COLOR);
     //Inventory slots
     for(int slotIdx = 0; slotIdx < MAX_SLOT_NUMBER; ++slotIdx){
         Vector2 slotPos = getSlotPos(slotIdx);
@@ -96,14 +105,17 @@ void UserInterface::drawInventory(const PlayerState & player) const {
                 break;
         }
     }
+    DrawTextureV(settingsTexture, {screenSize.x - 35.0f, 5.0f}, WHITE);
 }
 
 void UserInterface::drawLevelBar(const PlayerState & player) const {
     Vector2 levelBarPos = VEC2(0, INVENTORY_BAR_SIZE.y);
-    DrawRectangleV(levelBarPos, VEC2(SCREEN_WIDTH, 30), { 153, 50, 30, 255 } );
+    DrawRectangleV(levelBarPos, VEC2(screenSize.x, 30), { 153, 50, 30, 255 } );
     DrawRectangleV(levelBarPos, VEC2(player.slowedDownXpBarLength, 30), YELLOW);
     string levelText = "Level " + intToStr(player.level);
-    DrawText(levelText.c_str(), levelBarPos.x + 5, levelBarPos.y + 5, 20, BLACK);
+    DrawText(levelText.c_str(), levelBarPos.x + BASIC_PADDING, levelBarPos.y + BASIC_PADDING, 20,
+        BLACK
+    );
 }
 
 void UserInterface::draw(const PlayerState & player) const {

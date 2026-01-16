@@ -82,7 +82,13 @@ void Simulation::update(const UserInterface & gui){
     updateOstracods();
     updatePlants();
 
-    if(GetMousePosition().y > gui.GUI_HEIGHT && IsMouseButtonPressed(0)){
+    Vector2 mousePosition = GetMousePosition();
+    if(IsMouseButtonPressed(0)
+        && mousePosition.y > gui.GUI_HEIGHT
+        //Temporary guardrails until proper aquariums are added
+        && mousePosition.x < SCREEN_WIDTH 
+        && mousePosition.y < SCREEN_HEIGHT
+    ){
         switch (gui.selectedInventorySlotIdx){
             case InventorySlots::slotWater:
                 if(environment.waterLevel < MAX_WATER_LEVEL){
@@ -121,10 +127,13 @@ void Simulation::update(const UserInterface & gui){
 }
 
 void Simulation::draw() const {
+    //Water
     DrawRectangle(0, environment.waterSurfaceY, SCREEN_WIDTH, environment.waterLevel, BLUE); 
+
     for(const Algae & algaeIt : algaes){
         DrawCircle(algaeIt.pos.x, algaeIt.pos.y, algaeIt.radius, GREEN); 
     }
+
     for(const Substrate & substrateIt : substrate){
         switch (substrateIt.type){
         case SubstrateType::soil:
@@ -140,10 +149,12 @@ void Simulation::draw() const {
             break;
         }
     }
+
     for(const Ostracod & ostracodIt : ostracods){
         //DrawCircleLines(ostracod.pos.x, ostracod.pos.y, ostracod.vision, BLACK); 
         DrawCircle(ostracodIt.pos.x, ostracodIt.pos.y, ostracodIt.radius, GRAY); 
     }
+    
     for(const Plant & plantIt : plants){
         switch (plantIt.type){
             case PlantPartType::seed:

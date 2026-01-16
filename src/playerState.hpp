@@ -12,5 +12,5 @@ public:
     void initPlayer();
     PlayerState();
     void addExperience(int experiencePoints);
-    void updateExperienceBar();
+    void updateExperienceBar(float currentScreenWidth);
 };
