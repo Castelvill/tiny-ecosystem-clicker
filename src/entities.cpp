@@ -254,7 +254,7 @@ bool Ostracod::detectCollisions(vector<Substrate> & substrate, const Vector2 nex
 }
 
 void Ostracod::eatAlgae(vector<Algae> & algaes){
-    if(alive && saturation < Ostracod::MAX_SATURATION)
+    if(alive && saturation >= Ostracod::MAX_SATURATION)
         return;
 
     if(eatingCooldown > 0){
@@ -270,9 +270,8 @@ void Ostracod::eatAlgae(vector<Algae> & algaes){
             eatingCooldown = BASIC_EATING_COOLDOWN;
             break;
         }
-        else{
+        else
             ++algaeIt;
-        }
     }
 }
 
@@ -286,9 +285,9 @@ void Entity::applyGravityAndBuoyancy(Environment & environment, bool isUnderwate
         float buoyancy = 1.0f - (pos.y - environment.waterSurfaceY) / environment.waterLevel;
         buoyancy += MIN_SAND_FALL;
 
-        if(velocity.y == 0.0f){
+        if(velocity.y == 0.0f)
             velocity.y = buoyancy;
-        }
+
         velocity.y = std::min(buoyancy, velocity.y);
     }
 }
@@ -299,15 +298,8 @@ void Ostracod::update(Environment & environment, vector<Algae> & algaes,
     if(!active)
         return;
 
-    //Kill when starved to death
-    if(alive){
-        saturation -= Ostracod::BASIC_ENERGY_COST;
-        if(saturation <= 0)
-            alive = false;
-        else
-            ++aliveOstracods;
-    }
-    
+    starveAndDie(aliveOstracods);
+
     bool isUnderwater = checkIfUnderwater(environment);
 
     move(environment, algaes, isUnderwater);
@@ -341,4 +333,16 @@ void Ostracod::update(Environment & environment, vector<Algae> & algaes,
 
     pos.x += velocity.x;
     pos.y += velocity.y;
+}
+
+void Ostracod::starveAndDie(size_t &aliveOstracods)
+{
+    if (alive)
+    {
+        saturation -= Ostracod::BASIC_ENERGY_COST;
+        if (saturation <= 0)
+            alive = false;
+        else
+            ++aliveOstracods;
+    }
 }

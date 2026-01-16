@@ -82,7 +82,8 @@ public:
     bool detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition);
     //Eat one algae
     void eatAlgae(vector<Algae> & algaes);
-    void update(Environment & environment, vector<Algae> & algaes, vector<Substrate> & substrate,
-        size_t & aliveOstrecods
+    void update(Environment &environment, vector<Algae> &algaes, vector<Substrate> &substrate,
+        size_t &aliveOstrecods
     );
+    void starveAndDie(size_t &aliveOstracods);
 };
