@@ -11,7 +11,7 @@ const int SATURATION_FROM_ALGAE = 300;
 
 class Environment{
 public:
-    static constexpr Color WATER_COLOR = {0, 121, 241, 155};
+    static constexpr Color WATER_COLOR = {0, 131, 251, 100};
     
     Vector2 position = {0, 0};
     Vector2 size = {0, 0};

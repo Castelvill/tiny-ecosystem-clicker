@@ -49,12 +49,10 @@ void UserInterface::update(PlayerState & player){
             }
         }
 
-        //TODO: Move it to the aquarium logic
-        //Clicking and leveling
+        //TODO: Use or remove it
         bool isMouseInAquarium = mousePos.y > GUI_HEIGHT;
         if(isMouseInAquarium){
-            player.addExperience(1);
-                player.loadingIndicatorAngle += 10.0f;
+            player.loadingIndicatorAngle += 10.0f;
             if(player.loadingIndicatorAngle >= 360.0f)
                 player.loadingIndicatorAngle = 0.0f;
         }
@@ -111,8 +109,8 @@ void UserInterface::drawInventory(const PlayerState & player) const {
 
 void UserInterface::drawLevelBar(const PlayerState & player) const {
     Vector2 levelBarPos = VEC2(0, INVENTORY_BAR_SIZE.y);
-    DrawRectangleV(levelBarPos, VEC2(screenSize.x, 30), { 153, 50, 30, 255 } );
-    DrawRectangleV(levelBarPos, VEC2(player.slowedDownXpBarLength, 30), YELLOW);
+    DrawRectangleV(levelBarPos, VEC2(screenSize.x, LEVEL_BAR_HEIGHT), LEVEL_BAR_BACKGROUND_COLOR);
+    DrawRectangleV(levelBarPos, VEC2(player.slowedDownXpBarLength, LEVEL_BAR_HEIGHT), YELLOW);
     string levelText = "Level " + intToStr(player.level);
     DrawText(levelText.c_str(), levelBarPos.x + BASIC_PADDING, levelBarPos.y + BASIC_PADDING, 20,
         BLACK
@@ -123,7 +121,7 @@ void UserInterface::draw(const PlayerState & player) const {
     drawInventory(player);
     drawLevelBar(player);
     
-    //TODO: Remove it or use it
+    //TODO: Use or remove it
     //Loading indicator
     //DrawCircleGradient(mousePos.x, mousePos.y, 20, {255, 255, 255, 155}, { 255, 109, 194, 155 });
     // Vector2 mousePos = GetMousePosition();

@@ -126,9 +126,10 @@ void Aquarium::removeEntitiesOutsideTheScreen(float currentScreenHeight){
 }
 
 template<typename T>
-void transferEntityType(Vector2 aquariumPos, Vector2 aquariumSize, vector<T> & outsideContainer,
+int transferEntityType(Vector2 aquariumPos, Vector2 aquariumSize, vector<T> & outsideContainer,
     vector<T> & aquariumContainer
 ){
+    int transfersCount = 0;
     for(auto it = outsideContainer.begin(); it != outsideContainer.end();){
         if(it->pos.x > aquariumPos.x
             && it->pos.x < aquariumPos.x + aquariumSize.x
@@ -138,29 +139,34 @@ void transferEntityType(Vector2 aquariumPos, Vector2 aquariumSize, vector<T> & o
             it->pos = it->pos - aquariumPos;
             aquariumContainer.push_back(*it);
             it = outsideContainer.erase(it);
+            ++transfersCount;
         }   
         else
             ++it;
     }
+    return transfersCount;
 }
-void Aquarium::transferEntitiesToOtherAquariums(vector<Aquarium> & aquariums){
+void Aquarium::transferEntitiesToOtherAquariums(vector<Aquarium> & aquariums, PlayerState & player){
+    int transfersCount = 0;
     for(Aquarium & aquarium : aquariums){
-        transferEntityType(aquarium.environment.position, aquarium.environment.size,
-            waterDroplets, aquarium.waterDroplets
+        transfersCount += transferEntityType(aquarium.environment.position,
+            aquarium.environment.size, waterDroplets, aquarium.waterDroplets
         );
-        transferEntityType(aquarium.environment.position, aquarium.environment.size,
-            algaes, aquarium.algaes
+        transfersCount += transferEntityType(aquarium.environment.position,
+            aquarium.environment.size, algaes, aquarium.algaes
         );
-        transferEntityType(aquarium.environment.position, aquarium.environment.size,
-            substrate, aquarium.substrate
+        transfersCount += transferEntityType(aquarium.environment.position,
+            aquarium.environment.size, substrate, aquarium.substrate
         );
-        transferEntityType(aquarium.environment.position, aquarium.environment.size,
-            ostracods, aquarium.ostracods
+        transfersCount += transferEntityType(aquarium.environment.position,
+            aquarium.environment.size, ostracods, aquarium.ostracods
         );
-        transferEntityType(aquarium.environment.position, aquarium.environment.size,
-            plants, aquarium.plants
+        transfersCount += transferEntityType(aquarium.environment.position,
+            aquarium.environment.size, plants, aquarium.plants
         );
     }
+    if(transfersCount > 0)
+        player.addExperience(transfersCount);
 }
 void Aquarium::removeWater(vector<Aquarium> & aquariums){
     Vector2 mousePosition = GetMousePosition();
@@ -174,7 +180,9 @@ void Aquarium::removeWater(vector<Aquarium> & aquariums){
         return;
     }
 }
-void Aquarium::updateGameArea(const UserInterface & gui, vector<Aquarium> & aquariums){
+void Aquarium::updateGameArea(const UserInterface & gui, vector<Aquarium> & aquariums,
+    PlayerState & player
+){
     Vector2 mousePosition = GetMousePosition();
     if(IsMouseButtonPressed(0) && mousePosition.y > gui.GUI_HEIGHT){
         switch (gui.selectedInventorySlotIdx){
@@ -209,7 +217,7 @@ void Aquarium::updateGameArea(const UserInterface & gui, vector<Aquarium> & aqua
 
     removeEntitiesOutsideTheScreen(gui.screenSize.y);
 
-    transferEntitiesToOtherAquariums(aquariums);
+    transferEntitiesToOtherAquariums(aquariums, player);
 }
 
 void Aquarium::drawAquarium() const {

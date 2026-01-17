@@ -17,10 +17,12 @@ class UserInterface{
     static constexpr Vector2 INVENTORY_SLOT_SIZE = {30, 30};
     static constexpr float BASIC_PADDING = 5.0f;
     static constexpr float SPACE_BETWEEN_SLOTS = 10.0f;
+    static constexpr float LEVEL_BAR_HEIGHT = 30.0f;
 
     static constexpr Color INVENTORY_BAR_COLOR = {198, 99, 0, 255};
-    static constexpr Color SELECTED_INVENTORY_SLOT_COLOR = {198+50, 99+50, 0+50, 255};
+    static constexpr Color SELECTED_INVENTORY_SLOT_COLOR = {248, 149, 50, 255};
     static constexpr Color INVENTORY_SLOT_BACKGROUND = {255, 214, 141, 255};
+    static constexpr Color LEVEL_BAR_BACKGROUND_COLOR = {153, 50, 30, 255};
 public:
     static const int GUI_HEIGHT = 60;
     static const int MAX_SLOT_NUMBER = 10;

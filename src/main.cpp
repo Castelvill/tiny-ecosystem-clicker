@@ -9,7 +9,7 @@ struct GameState{
 
 void update(GameState & gameState){
     gameState.gui.update(gameState.player);
-    gameState.gameArea.updateGameArea(gameState.gui, gameState.aquariums);
+    gameState.gameArea.updateGameArea(gameState.gui, gameState.aquariums, gameState.player);
     for(Aquarium & aquarium : gameState.aquariums)
         aquarium.update();
     gameState.gameArea.update();

@@ -31,9 +31,11 @@ public:
 
     void update();
     void removeEntitiesOutsideTheScreen(float currentScreenHeight);
-    void transferEntitiesToOtherAquariums(vector<Aquarium> & aquariums);
+    void transferEntitiesToOtherAquariums(vector<Aquarium> & aquariums, PlayerState & player);
     void removeWater(vector<Aquarium> & aquariums);
-    void updateGameArea(const UserInterface & gui, vector<Aquarium> & aquariums);
+    void updateGameArea(const UserInterface & gui, vector<Aquarium> & aquariums,
+        PlayerState & player
+    );
     void drawAquarium() const;
     void drawEntities() const;
     void draw() const;
