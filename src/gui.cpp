@@ -10,6 +10,8 @@ UserInterface::UserInterface(){
     ostracodTexture = LoadTexture("images/ostracod.png");
     seedTexture = LoadTexture("images/seed.png");
     settingsTexture = LoadTexture("images/settings.png");
+    backgroundTexture = LoadTexture("images/background.png");
+    SetTextureWrap(backgroundTexture, TEXTURE_WRAP_REPEAT);
 }
 
 UserInterface::~UserInterface(){
@@ -22,6 +24,7 @@ UserInterface::~UserInterface(){
     UnloadTexture(ostracodTexture);
     UnloadTexture(seedTexture);
     UnloadTexture(settingsTexture);
+    UnloadTexture(backgroundTexture);
 }
 
 Vector2 UserInterface::getSlotPos(int slotIdx) const {
@@ -129,4 +132,25 @@ void UserInterface::draw(const PlayerState & player) const {
     //     DrawCircleSector(mousePos, 20, 0.0f, player.loadingIndicatorAngle,
     //         20.0f, {255, 109, 194, 155}
     //     );
+}
+
+void UserInterface::drawBackground() const {
+
+    Rectangle source = {
+        0, 0,
+        screenSize.x,
+        screenSize.y
+    };
+
+    Rectangle dest = {
+        0, GUI_HEIGHT,
+        screenSize.x,
+        screenSize.y
+    };
+
+    Vector2 origin = { 0, 0 };
+
+    DrawTexturePro(backgroundTexture, source, dest, origin, 0.0f, WHITE);
+
+    //DrawTextureV(backgroundTexture, {0, GUI_HEIGHT}, WHITE);
 }

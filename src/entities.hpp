@@ -84,7 +84,7 @@ public:
     void thinkAndMove(Environment & environment, vector<Algae> & algaes, bool isUnderwater);
     //Movement when alive or dead
     void move(Environment & environment, vector<Algae> & algaes, bool isUnderwater);
-    bool detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition);
+    bool detectCollisionsWithSubstrate(vector<Substrate> & substrate, const Vector2 nextPosition);
     //Eat one algae
     void eatAlgae(vector<Algae> & algaes);
     void update(Environment &environment, vector<Algae> &algaes, vector<Substrate> &substrate);

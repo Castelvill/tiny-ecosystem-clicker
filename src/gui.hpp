@@ -24,7 +24,7 @@ class UserInterface{
     static constexpr Color INVENTORY_SLOT_BACKGROUND = {255, 214, 141, 255};
     static constexpr Color LEVEL_BAR_BACKGROUND_COLOR = {153, 50, 30, 255};
 public:
-    static const int GUI_HEIGHT = 60;
+    static const int GUI_HEIGHT = 70;
     static const int MAX_SLOT_NUMBER = 10;
 
     Texture2D waterTexture;
@@ -37,6 +37,8 @@ public:
     Texture2D seedTexture;
     Texture2D settingsTexture;
 
+    Texture2D backgroundTexture;
+
     int selectedInventorySlotIdx = 0;
     Vector2 screenSize = {SCREEN_WIDTH, SCREEN_HEIGHT};
 
@@ -47,4 +49,5 @@ public:
     void drawInventory(const PlayerState & player) const;
     void drawLevelBar(const PlayerState & player) const;
     void draw(const PlayerState & player) const;
+    void drawBackground() const;
 };

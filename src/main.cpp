@@ -1,11 +1,28 @@
 #include "aquarium.hpp"
+#include "shelf.hpp"
 
 struct GameState{
     Aquarium gameArea;
     vector<Aquarium> aquariums;
+    vector<Shelf> shelves;
     PlayerState player;
     UserInterface gui;
+    void draw() const;
 };
+
+void GameState::draw() const {
+    gui.drawBackground();
+
+    for(const Aquarium & aquarium : aquariums)
+        aquarium.draw();
+    
+    gameArea.drawEntities();
+
+    for(const Shelf & shelf : shelves)
+        shelf.draw();
+
+    gui.draw(player);
+}
 
 void update(GameState & gameState){
     gameState.gui.update(gameState.player);
@@ -20,19 +37,20 @@ void draw(const GameState & gameState){
 
     ClearBackground(RAYWHITE);
 
-    for(const Aquarium & aquarium : gameState.aquariums)
-        aquarium.draw();
-    gameState.gameArea.drawEntities();
-
-    gameState.gui.draw(gameState.player);
+    gameState.draw();
 
     EndDrawing();
 }
 
 void mainLoop(){
     GameState gameState;
+    gameState.shelves.push_back(Shelf({40, 300}, {120, 10}));
     gameState.aquariums.push_back(Aquarium({50, 200}, {100, 100}));
+
+    gameState.shelves.push_back(Shelf({190, 350}, {120, 10}));
     gameState.aquariums.push_back(Aquarium({200, 250}, {100, 100}));
+
+    gameState.shelves.push_back(Shelf({340, 400}, {120, 10}));
     gameState.aquariums.push_back(Aquarium({350, 300}, {100, 100}));
     while(!WindowShouldClose()){ //Detect window close button or ESC key
         update(gameState);

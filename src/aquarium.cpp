@@ -222,7 +222,7 @@ void Aquarium::updateGameArea(const UserInterface & gui, vector<Aquarium> & aqua
 
 void Aquarium::drawAquarium() const {
     //Background
-    DrawRectangleV({0, 0}, environment.size, LIGHTGRAY);
+    DrawRectangleV({0, 0}, environment.size, { 200, 200, 200, 200 });
 
     //Borders
     DrawLineEx({0, 0}, {0, 0 + environment.size.y},

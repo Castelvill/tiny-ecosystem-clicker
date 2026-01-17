@@ -231,8 +231,6 @@ void Ostracod::thinkAboutTheNextMove(const Environment & environment, vector<Alg
 void Ostracod::thinkAndMove(Environment & environment, vector<Algae> & algaes, bool isUnderwater){
     float acceleration = speed;
 
-    
-
     Vector2 movementVector = VEC2(0.0f, 0.0f);
     Entity* visibleAlgae = nullptr;
 
@@ -276,7 +274,7 @@ void Ostracod::move(Environment & environment, vector<Algae> & algaes, bool isUn
     limitVector(velocity, SPEED_LIMIT);
 }
 
-bool Ostracod::detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition){
+bool Ostracod::detectCollisionsWithSubstrate(vector<Substrate> & substrate, const Vector2 nextPosition){
     //Collisions with substrate
     for(const Substrate & substrateIt : substrate){
         if(substrateIt.active)
@@ -337,7 +335,9 @@ void Ostracod::update(Environment & environment, vector<Algae> & algaes,
         pos.y + velocity.y
     );
 
-    if(detectCollisions(substrate, nextPosition)){
+    if(detectCollisionWithAquarium(pos, environment)
+        || detectCollisionsWithSubstrate(substrate, nextPosition)
+    ){
         velocity.x = 0.0f;
         velocity.y = 0.0f;
         //When there's a substrate obstacle between this ostracod and algae:
