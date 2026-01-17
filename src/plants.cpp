@@ -117,7 +117,7 @@ void Plant::moveSeed(Environment & environment, vector<Substrate> & substrate){
             break;
     }
 
-    detectCollisionWithAquarium(nextPosition);
+    detectCollisionWithAquarium(nextPosition, environment);
 
     pos.x += velocity.x;
     pos.y += velocity.y;

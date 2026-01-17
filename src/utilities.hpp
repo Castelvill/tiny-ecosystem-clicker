@@ -39,6 +39,7 @@ Vector2 operator/(Vector2 lhs, float rhs);
 bool operator==(Vector2 lhs, Vector2 rhs);
 
 Vector2 operator+(Vector2 lhs, Vector2 rhs);
+Vector2 operator-(Vector2 lhs, Vector2 rhs);
 
 string intToStr(int integer);
 

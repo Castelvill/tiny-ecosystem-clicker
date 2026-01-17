@@ -1,5 +1,57 @@
 #include "entities.hpp"
 
+bool Entity::detectCollisionWithAquarium(const Vector2 nextPosition,
+    const Environment & environment
+){
+    if(environment.size.x == 0.0f || environment.size.y == 0.0f)
+        return false;
+
+    //Floor
+    if(velocity.y > 0.0f && nextPosition.y + radius >= environment.size.y){
+        velocity.y = 0.0f;
+        return true;
+    }
+    //Right wall
+    if(velocity.x > 0.0f && nextPosition.x + radius >= environment.size.x){
+        velocity.x = 0.0f;
+        return true;
+    }
+    //Left wall
+    if(velocity.x < 0.0f && nextPosition.x - radius <= 0){
+        velocity.x = 0.0f;
+        return true;
+    }
+    return false;
+}
+bool Entity::checkIfUnderwater(Environment & environment){
+    return pos.y >= environment.getWaterSurfaceY();
+}
+void Entity::applyGravityAndBuoyancy(Environment & environment, bool isUnderwater, float mass){
+    if(!isUnderwater)
+        velocity.y += GRAVITY * mass;
+    else{
+        float buoyancy = 1.0f - (pos.y - environment.getWaterSurfaceY()) / environment.waterLevel;
+        buoyancy += MIN_SAND_FALL;
+
+        if(velocity.y == 0.0f)
+            velocity.y = buoyancy;
+
+        velocity.y = std::min(buoyancy, velocity.y);
+    }
+}
+
+WaterDroplet::WaterDroplet(){
+    active = true;
+    pos = GetMousePosition();
+    velocity = VEC2(0.0f, 0.0f);
+    radius = randomBetween(WaterDroplet::SIZE_RANGE.x, WaterDroplet::SIZE_RANGE.y);
+}
+
+void WaterDroplet::update(Environment & environment){
+    applyGravityAndBuoyancy(environment, false, radius / WaterDroplet::SIZE_RANGE.y);
+    pos.y += velocity.y;
+}
+
 Algae::Algae(){
     active = true;
     pos = GetMousePosition();
@@ -25,11 +77,6 @@ Substrate::Substrate(SubstrateType substrateType){
     pos = GetMousePosition();
     velocity = VEC2(0.0f, 0.0f);
     radius = randomBetween(Substrate::SIZE_RANGE.x, Substrate::SIZE_RANGE.y);
-}
-
-void Substrate::settle(){
-    velocity.y = 0.0f;
-    active = false;
 }
 
 SimpleCollisionType Substrate::checkFallingCollision(const Entity & movingEntity,
@@ -67,16 +114,17 @@ SimpleCollisionType Substrate::checkFallingCollision(const Entity & movingEntity
 void Substrate::update(Environment & environment, vector<Substrate> & substrate,
     size_t currentSandIdx
 ){
-    if(!active){
+    if(!active)
         return;
-    }
+
+    float waterSurfacePosY = environment.getWaterSurfaceY();
 
     //Gravity and buoyancy
-    if(pos.y < environment.waterSurfaceY){
+    if(pos.y < waterSurfacePosY){
         velocity.y += GRAVITY * (radius / Substrate::SIZE_RANGE.y);
     }
     else{
-        float buoyancy = 1.0f - (pos.y - environment.waterSurfaceY) / environment.waterLevel;
+        float buoyancy = 1.0f - (pos.y - waterSurfacePosY) / environment.waterLevel;
         buoyancy += MIN_SAND_FALL;
 
         if(velocity.y == 0.0f){
@@ -85,9 +133,9 @@ void Substrate::update(Environment & environment, vector<Substrate> & substrate,
         velocity.y = std::min(buoyancy, velocity.y);
     }
 
-    //When substrate particles hit the ground, stop them.
-    if(pos.y + radius >= SCREEN_HEIGHT){
-        settle();
+    //When substrate particle hits the ground, stop it.
+    if(detectCollisionWithAquarium(pos, environment)){
+        active = false;
         return;
     }
 
@@ -95,7 +143,8 @@ void Substrate::update(Environment & environment, vector<Substrate> & substrate,
     SimpleCollisionType collisionType = checkFallingCollision(*this, substrate);
     switch (collisionType){
         case SimpleCollisionType::full:
-            settle();
+            velocity = {0, 0};
+            active = false;
             return;
         case SimpleCollisionType::left:
             pos.x += 1.0f;
@@ -164,7 +213,7 @@ void Ostracod::thinkAboutTheNextMove(const Environment & environment, vector<Alg
     
     //Check if ostracod reached the water surface 
     if(goToWaterSurface){
-        if(pos.y >= environment.waterSurfaceY)
+        if(pos.y >= environment.getWaterSurfaceY())
             goToWaterSurface = false;
         else
             return;
@@ -182,13 +231,15 @@ void Ostracod::thinkAboutTheNextMove(const Environment & environment, vector<Alg
 void Ostracod::thinkAndMove(Environment & environment, vector<Algae> & algaes, bool isUnderwater){
     float acceleration = speed;
 
-    if(!isUnderwater)
-        acceleration *= (1.0f - Ostracod::OUTSIDE_WATER_SPEED_PENALITY);
+    
 
     Vector2 movementVector = VEC2(0.0f, 0.0f);
     Entity* visibleAlgae = nullptr;
 
-    thinkAboutTheNextMove(environment, algaes, visibleAlgae);
+    if(!isUnderwater)
+        acceleration *= (1.0f - Ostracod::OUTSIDE_WATER_SPEED_PENALITY);
+    else
+        thinkAboutTheNextMove(environment, algaes, visibleAlgae);
 
     //Move to algaes
     if(searchForFood && visibleAlgae != nullptr){ 
@@ -223,21 +274,6 @@ void Ostracod::move(Environment & environment, vector<Algae> & algaes, bool isUn
     }
 
     limitVector(velocity, SPEED_LIMIT);
-}
-
-void Entity::detectCollisionWithAquarium(const Vector2 nextPosition){
-    //Floor
-    if(velocity.y > 0.0f && nextPosition.y + radius >= SCREEN_HEIGHT){
-        velocity.y = 0.0f;
-    }
-    //Right wall
-    if(velocity.x > 0.0f && nextPosition.x + radius >= SCREEN_WIDTH){
-        velocity.x = 0.0f;
-    }
-    //Left wall
-    if(velocity.x < 0.0f && nextPosition.x - radius <= 0){
-        velocity.x = 0.0f;
-    }
 }
 
 bool Ostracod::detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition){
@@ -275,30 +311,13 @@ void Ostracod::eatAlgae(vector<Algae> & algaes){
     }
 }
 
-bool Entity::checkIfUnderwater(Environment & environment){
-    return pos.y >= environment.waterSurfaceY;
-}
-void Entity::applyGravityAndBuoyancy(Environment & environment, bool isUnderwater, float mass){
-    if(!isUnderwater)
-        velocity.y += GRAVITY * mass;
-    else{
-        float buoyancy = 1.0f - (pos.y - environment.waterSurfaceY) / environment.waterLevel;
-        buoyancy += MIN_SAND_FALL;
-
-        if(velocity.y == 0.0f)
-            velocity.y = buoyancy;
-
-        velocity.y = std::min(buoyancy, velocity.y);
-    }
-}
-
 void Ostracod::update(Environment & environment, vector<Algae> & algaes,
-    vector<Substrate> & substrate, size_t & aliveOstracods
+    vector<Substrate> & substrate
 ){
     if(!active)
         return;
 
-    starveAndDie(aliveOstracods);
+    starveAndDie();
 
     bool isUnderwater = checkIfUnderwater(environment);
 
@@ -335,14 +354,10 @@ void Ostracod::update(Environment & environment, vector<Algae> & algaes,
     pos.y += velocity.y;
 }
 
-void Ostracod::starveAndDie(size_t &aliveOstracods)
-{
-    if (alive)
-    {
+void Ostracod::starveAndDie(){
+    if(alive){
         saturation -= Ostracod::BASIC_ENERGY_COST;
         if (saturation <= 0)
             alive = false;
-        else
-            ++aliveOstracods;
     }
 }

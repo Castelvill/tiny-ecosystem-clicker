@@ -49,6 +49,7 @@ void UserInterface::update(PlayerState & player){
             }
         }
 
+        //TODO: Move it to the aquarium logic
         //Clicking and leveling
         bool isMouseInAquarium = mousePos.y > GUI_HEIGHT;
         if(isMouseInAquarium){

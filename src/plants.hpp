@@ -56,8 +56,8 @@ class Plant: public Entity{
 public:
     PlantDna dna;
     PlantPartType type;
-    size_t plantIdx;
-    size_t parentIdx;
+    size_t plantIdx = 0;
+    size_t parentIdx = 0;
     bool growNewParts = false;
     int currentLevel = 0;
 

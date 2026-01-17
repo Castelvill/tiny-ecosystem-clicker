@@ -1,10 +1,13 @@
 #include "environment.hpp"
 
-void Environment::updateWaterSurfaceY(){
-    waterSurfaceY = SCREEN_HEIGHT - waterLevel;
+Environment::Environment(){
+    position = {0, 0};
+    size = {0, 0};
+    waterLevel = 0;
 }
 
-Environment::Environment(){
-    waterLevel = INITIAL_WATER_LEVEL;
-    updateWaterSurfaceY();
+float Environment::getWaterSurfaceY() const {
+    if(size.y == 0)
+        return MAXFLOAT;
+    return std::min(size.y - waterLevel, size.y);
 }

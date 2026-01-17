@@ -1,4 +1,3 @@
-#include "utilities.hpp"
 #include "environment.hpp"
 #include <time.h>
 #include <vector>
@@ -13,9 +12,16 @@ public:
     Vector2 pos = VEC2(0.0f, 0.0f);;
     Vector2 velocity = VEC2(0.0f, 0.0f);;
     float radius = 1.0f;
+    bool detectCollisionWithAquarium(const Vector2 nextPosition, const Environment & environment);
     bool checkIfUnderwater(Environment & environment);
     void applyGravityAndBuoyancy(Environment & environment, bool isUnderwater, float mass);
-    void detectCollisionWithAquarium(const Vector2 nextPosition);
+};
+
+class WaterDroplet: public Entity {
+    constexpr static Vector2 SIZE_RANGE = VEC2(4.0f, 6.0f);
+public:
+    WaterDroplet();
+    void update(Environment & environment);
 };
 
 class Algae: public Entity{
@@ -39,7 +45,6 @@ public:
     SubstrateType type = SubstrateType::soil;
 
     Substrate(SubstrateType substrateType);
-    void settle();
     void update(Environment & environment, vector<Substrate> & substrate, size_t currentSandIdx);
 };
 
@@ -82,8 +87,6 @@ public:
     bool detectCollisions(vector<Substrate> & substrate, const Vector2 nextPosition);
     //Eat one algae
     void eatAlgae(vector<Algae> & algaes);
-    void update(Environment &environment, vector<Algae> &algaes, vector<Substrate> &substrate,
-        size_t &aliveOstrecods
-    );
-    void starveAndDie(size_t &aliveOstracods);
+    void update(Environment &environment, vector<Algae> &algaes, vector<Substrate> &substrate);
+    void starveAndDie();
 };

@@ -72,6 +72,10 @@ Vector2 operator+(Vector2 lhs, Vector2 rhs){
     return {lhs.x + rhs.x, lhs.y + rhs.y};
 }
 
+Vector2 operator-(Vector2 lhs, Vector2 rhs){
+    return {lhs.x - rhs.x, lhs.y - rhs.y};
+}
+
 string intToStr(int integer){
     char buff[11];
     sprintf(buff, "%d", integer);

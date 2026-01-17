@@ -1,14 +1,18 @@
-#include "simulation.hpp"
+#include "aquarium.hpp"
 
 struct GameState{
-    Simulation simulation;
+    Aquarium gameArea;
+    vector<Aquarium> aquariums;
     PlayerState player;
     UserInterface gui;
 };
 
 void update(GameState & gameState){
     gameState.gui.update(gameState.player);
-    gameState.simulation.update(gameState.gui);
+    gameState.gameArea.updateGameArea(gameState.gui, gameState.aquariums);
+    for(Aquarium & aquarium : gameState.aquariums)
+        aquarium.update();
+    gameState.gameArea.update();
 }
 
 void draw(const GameState & gameState){
@@ -16,7 +20,10 @@ void draw(const GameState & gameState){
 
     ClearBackground(RAYWHITE);
 
-    gameState.simulation.draw();
+    for(const Aquarium & aquarium : gameState.aquariums)
+        aquarium.draw();
+    gameState.gameArea.drawEntities();
+
     gameState.gui.draw(gameState.player);
 
     EndDrawing();
@@ -24,6 +31,9 @@ void draw(const GameState & gameState){
 
 void mainLoop(){
     GameState gameState;
+    gameState.aquariums.push_back(Aquarium({50, 200}, {100, 100}));
+    gameState.aquariums.push_back(Aquarium({200, 250}, {100, 100}));
+    gameState.aquariums.push_back(Aquarium({350, 300}, {100, 100}));
     while(!WindowShouldClose()){ //Detect window close button or ESC key
         update(gameState);
         draw(gameState);
