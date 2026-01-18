@@ -86,3 +86,14 @@ bool detectButtonCollision(Vector2 mousePos, Vector2 buttonPos, Vector2 buttonSi
     return mousePos.x >= buttonPos.x && mousePos.x <= buttonPos.x + buttonSize.x
         && mousePos.y >= buttonPos.y && mousePos.y <= buttonPos.y + buttonSize.y;
 }
+
+Rectangle toRectangle(Vector2 position, Vector2 size){
+    return {position.x, position.y, size.x, size.y};
+}
+
+bool collisionOfPointAndRectangle(Vector2 point, Rectangle rectangle){
+    return point.x > rectangle.x
+        && point.x < rectangle.x + rectangle.width
+        && point.y > rectangle.y
+        && point.y < rectangle.y + rectangle.height;
+}

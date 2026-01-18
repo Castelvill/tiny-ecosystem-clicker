@@ -1,6 +1,7 @@
 #include "playerState.hpp"
 
 enum InventorySlots: int {
+    slotAquarium,
     slotWater,
     slotRemoveWater,
     slotAlgae,
@@ -27,6 +28,7 @@ public:
     static const int GUI_HEIGHT = 70;
     static const int MAX_SLOT_NUMBER = 10;
 
+    Texture2D aquariumTexture;
     Texture2D waterTexture;
     Texture2D removeWaterTexture;
     Texture2D algaeTexture;

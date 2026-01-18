@@ -1,5 +1,7 @@
 #include "gui.hpp"
 
+enum class Direction{left, up, right, down, none};
+
 class Aquarium{
     Environment environment;
     vector<WaterDroplet> waterDroplets;
@@ -10,7 +12,10 @@ class Aquarium{
 public:
     Aquarium();
     Aquarium(Vector2 newPosition, Vector2 newSize);
+    Aquarium(const Rectangle & newAquariumRect);
     ~Aquarium();
+    
+    Rectangle getRectangle() const;
 
     void spawnWaterDroplet();
     void updateWaterDroplet();
@@ -39,4 +44,5 @@ public:
     void drawAquarium() const;
     void drawEntities() const;
     void draw() const;
+    void expand(Direction direction, float length);
 };

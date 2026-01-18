@@ -8,8 +8,19 @@ Aquarium::Aquarium(Vector2 newPosition, Vector2 newSize){
     environment.position = newPosition;
     environment.size = newSize;
 }
+Aquarium::Aquarium(const Rectangle & newAquariumRect){
+    environment.position = {newAquariumRect.x, newAquariumRect.y};
+    environment.size = {newAquariumRect.width, newAquariumRect.height};
+}
 
 Aquarium::~Aquarium(){}
+
+Rectangle Aquarium::getRectangle() const {
+    return {
+        environment.position.x, environment.position.y,
+        environment.size.x, environment.size.y
+    };
+}
 
 void Aquarium::spawnWaterDroplet(){
     waterDroplets.emplace_back();
@@ -131,11 +142,7 @@ int transferEntityType(Vector2 aquariumPos, Vector2 aquariumSize, vector<T> & ou
 ){
     int transfersCount = 0;
     for(auto it = outsideContainer.begin(); it != outsideContainer.end();){
-        if(it->pos.x > aquariumPos.x
-            && it->pos.x < aquariumPos.x + aquariumSize.x
-            && it->pos.y > aquariumPos.y
-            && it->pos.y < aquariumPos.y + aquariumSize.y
-        ){
+        if(collisionOfPointAndRectangle(it->pos, toRectangle(aquariumPos, aquariumSize))){
             it->pos = it->pos - aquariumPos;
             aquariumContainer.push_back(*it);
             it = outsideContainer.erase(it);
@@ -186,6 +193,9 @@ void Aquarium::updateGameArea(const UserInterface & gui, vector<Aquarium> & aqua
     Vector2 mousePosition = GetMousePosition();
     if(IsMouseButtonPressed(0) && mousePosition.y > gui.GUI_HEIGHT){
         switch (gui.selectedInventorySlotIdx){
+            case InventorySlots::slotAquarium:
+                //TODO?
+                break;
             case InventorySlots::slotWater:
                 spawnWaterDroplet();
                 break;
@@ -301,4 +311,22 @@ void Aquarium::draw() const {
     ); 
 
     EndMode2D();
+}
+
+void Aquarium::expand(Direction direction, float length){
+    switch (direction){
+        case Direction::left:
+            environment.position.x -= length;
+            environment.size.x += length;
+            return;
+        case Direction::up:
+            environment.position.y -= length;
+            environment.size.y += length;
+            return;
+        case Direction::right:
+            environment.size.x += length;
+            return;
+        default:
+            return;
+    }
 }

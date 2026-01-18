@@ -1,6 +1,7 @@
 #include "gui.hpp"
 
 UserInterface::UserInterface(){
+    aquariumTexture = LoadTexture("images/aquarium.png");
     waterTexture = LoadTexture("images/water.png");
     removeWaterTexture = LoadTexture("images/spill_water.png");
     algaeTexture = LoadTexture("images/algae.png");
@@ -15,6 +16,7 @@ UserInterface::UserInterface(){
 }
 
 UserInterface::~UserInterface(){
+    UnloadTexture(aquariumTexture);
     UnloadTexture(waterTexture);
     UnloadTexture(removeWaterTexture);
     UnloadTexture(algaeTexture);
@@ -79,6 +81,9 @@ void UserInterface::drawInventory(const PlayerState & player) const {
         );
         //Drawing icons
         switch (slotIdx){
+            case InventorySlots::slotAquarium:
+                DrawTextureV(aquariumTexture, slotPos, WHITE);
+                break;
             case InventorySlots::slotWater: 
                 DrawTextureV(waterTexture, slotPos, WHITE);
                 break;

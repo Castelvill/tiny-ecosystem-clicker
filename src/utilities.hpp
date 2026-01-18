@@ -46,3 +46,7 @@ Vector2 operator-(Vector2 lhs, Vector2 rhs);
 string intToStr(int integer);
 
 bool detectButtonCollision(Vector2 mousePos, Vector2 buttonPos, Vector2 buttonSize);
+
+Rectangle toRectangle(Vector2 position, Vector2 size);
+
+bool collisionOfPointAndRectangle(Vector2 point, Rectangle rectangle);
