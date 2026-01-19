@@ -28,14 +28,15 @@ At the top of the game window are action buttons. Each button represents an acti
 
 Available actions:
 1. Build/expand aquarium
-2. Add water to the aquarium
-3. Remove water from the aquarium
-4. Throw algae into the aquarium
-5. Throw soil
-6. Throw gravel
-7. Throw sand
-8. Throw an ostracod
-9. Throw a seed
+2. Move aquarium
+3. Add water to the aquarium
+4. Remove water from the aquarium
+5. Throw algae into the aquarium
+6. Throw soil
+7. Throw gravel
+8. Throw sand
+9. Throw an ostracod
+10. Throw a seed
 
 Below the action buttons is an experience bar that shows your current level and the leveling progress.
 
@@ -45,11 +46,12 @@ Steps:
 1. Select the first action (aquarium) using the buttons at the top of the game window.
 2. Move mouse to the game area (everything below the experience bar) and click the left mouse button - now you have a small aquarium!
 3. You can click on the edges of the aquarium to expand it.
-4. Select any other action button.
-5. Click the left mouse button above or inside the aquarium. Each click performs the selected action.
-6. You can switch actions at any time.
+4. If you want to move the aquarium, select the second action button, click on the selected aquarium and move it with your mouse.
+5. Select any other action button (from 2nd to 10th option).
+6. Move your mouse above or inside the selected aquarium and click the left mouse button. Each click performs the selected action.
+7. You can switch actions at any time.
 
-Final step: Enjoy your aquarium!
+Final step: Use all available actions to create many cool aquariums and enjoy the view!
 
 ## Screenshots
 
