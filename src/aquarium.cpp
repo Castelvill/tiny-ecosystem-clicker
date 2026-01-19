@@ -15,11 +15,18 @@ Aquarium::Aquarium(const Rectangle & newAquariumRect){
 
 Aquarium::~Aquarium(){}
 
+Vector2 Aquarium::getPosition() const {
+    return environment.position;
+}
 Rectangle Aquarium::getRectangle() const {
     return {
         environment.position.x, environment.position.y,
         environment.size.x, environment.size.y
     };
+}
+
+void Aquarium::setPosition(Vector2 newPosition){
+    environment.position = newPosition;
 }
 
 void Aquarium::spawnWaterDroplet(){
@@ -191,9 +198,9 @@ void Aquarium::updateGameArea(const UserInterface & gui, vector<Aquarium> & aqua
     PlayerState & player
 ){
     Vector2 mousePosition = GetMousePosition();
-    if(IsMouseButtonPressed(0) && mousePosition.y > gui.GUI_HEIGHT){
+    if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mousePosition.y > gui.GUI_HEIGHT){
         switch (gui.selectedInventorySlotIdx){
-            case InventorySlots::slotAquarium:
+            case InventorySlots::slotBuildAquarium:
                 //TODO?
                 break;
             case InventorySlots::slotWater:

@@ -15,7 +15,10 @@ public:
     Aquarium(const Rectangle & newAquariumRect);
     ~Aquarium();
     
+    Vector2 getPosition() const;
     Rectangle getRectangle() const;
+
+    void setPosition(Vector2 newPosition);
 
     void spawnWaterDroplet();
     void updateWaterDroplet();

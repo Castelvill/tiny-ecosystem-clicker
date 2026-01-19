@@ -1,7 +1,8 @@
 #include "playerState.hpp"
 
 enum InventorySlots: int {
-    slotAquarium,
+    slotBuildAquarium,
+    slotMoveAquarium,
     slotWater,
     slotRemoveWater,
     slotAlgae,
@@ -29,6 +30,7 @@ public:
     static const int MAX_SLOT_NUMBER = 10;
 
     Texture2D aquariumTexture;
+    Texture2D moveAquariumTexture;
     Texture2D waterTexture;
     Texture2D removeWaterTexture;
     Texture2D algaeTexture;

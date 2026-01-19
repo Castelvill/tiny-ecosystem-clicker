@@ -2,6 +2,7 @@
 
 UserInterface::UserInterface(){
     aquariumTexture = LoadTexture("images/aquarium.png");
+    moveAquariumTexture = LoadTexture("images/move_aquarium.png");
     waterTexture = LoadTexture("images/water.png");
     removeWaterTexture = LoadTexture("images/spill_water.png");
     algaeTexture = LoadTexture("images/algae.png");
@@ -17,6 +18,7 @@ UserInterface::UserInterface(){
 
 UserInterface::~UserInterface(){
     UnloadTexture(aquariumTexture);
+    UnloadTexture(moveAquariumTexture);
     UnloadTexture(waterTexture);
     UnloadTexture(removeWaterTexture);
     UnloadTexture(algaeTexture);
@@ -41,7 +43,7 @@ void UserInterface::update(PlayerState & player){
         screenSize = {float(GetScreenWidth()), float(GetScreenHeight())};
 
     Vector2 mousePos = GetMousePosition();
-    if(IsMouseButtonPressed(0)
+    if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)
         //Temporary guardrails until proper aquariums are added
         && mousePos.x < SCREEN_WIDTH 
         && mousePos.y < SCREEN_HEIGHT
@@ -81,8 +83,11 @@ void UserInterface::drawInventory(const PlayerState & player) const {
         );
         //Drawing icons
         switch (slotIdx){
-            case InventorySlots::slotAquarium:
+            case InventorySlots::slotBuildAquarium:
                 DrawTextureV(aquariumTexture, slotPos, WHITE);
+                break;
+            case InventorySlots::slotMoveAquarium:
+                DrawTextureV(moveAquariumTexture, slotPos, WHITE);
                 break;
             case InventorySlots::slotWater: 
                 DrawTextureV(waterTexture, slotPos, WHITE);
