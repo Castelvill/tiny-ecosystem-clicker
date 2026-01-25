@@ -35,6 +35,7 @@ public:
     void updateOstracods();
 
     void spawnSeed();
+    void spawnSeed(Vector2 position);
     void updatePlants();
 
     void update();

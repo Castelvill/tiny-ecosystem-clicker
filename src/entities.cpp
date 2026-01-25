@@ -1,23 +1,23 @@
 #include "entities.hpp"
 
 bool Entity::detectCollisionWithAquarium(const Vector2 nextPosition,
-    const Environment & environment
+    const Environment & environment, bool ignoreVelocity
 ){
     if(environment.size.x == 0.0f || environment.size.y == 0.0f)
         return false;
 
     //Floor
-    if(velocity.y > 0.0f && nextPosition.y + radius >= environment.size.y){
+    if((ignoreVelocity || velocity.y > 0.0f) && nextPosition.y + radius >= environment.size.y){
         velocity.y = 0.0f;
         return true;
     }
     //Right wall
-    if(velocity.x > 0.0f && nextPosition.x + radius >= environment.size.x){
+    if((ignoreVelocity || velocity.x > 0.0f) && nextPosition.x + radius >= environment.size.x){
         velocity.x = 0.0f;
         return true;
     }
     //Left wall
-    if(velocity.x < 0.0f && nextPosition.x - radius <= 0){
+    if((ignoreVelocity || velocity.x < 0.0f) && nextPosition.x - radius <= 0){
         velocity.x = 0.0f;
         return true;
     }
@@ -111,6 +111,11 @@ SimpleCollisionType Substrate::checkFallingCollision(const Entity & movingEntity
     return SimpleCollisionType::none;
 }
 
+void Substrate::stopSubstrate(){
+    velocity = {0, 0};
+    active = false;
+}
+
 void Substrate::update(Environment & environment, vector<Substrate> & substrate,
     size_t currentSandIdx
 ){
@@ -143,13 +148,20 @@ void Substrate::update(Environment & environment, vector<Substrate> & substrate,
     SimpleCollisionType collisionType = checkFallingCollision(*this, substrate);
     switch (collisionType){
         case SimpleCollisionType::full:
-            velocity = {0, 0};
-            active = false;
+            stopSubstrate();
             return;
         case SimpleCollisionType::left:
+            if(detectCollisionWithAquarium(pos + VEC2(1.0f, 0.0f), environment, true)){
+                stopSubstrate();
+                return;
+            }
             pos.x += 1.0f;
             break;
         case SimpleCollisionType::right:
+            if(detectCollisionWithAquarium(pos - VEC2(1.0f, 0.0f), environment, true)){
+                stopSubstrate();
+                return;
+            }
             pos.x -= 1.0f;
             break;
         default:

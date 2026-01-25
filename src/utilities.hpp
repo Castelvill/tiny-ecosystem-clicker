@@ -13,7 +13,11 @@ struct IntRange{int min; int max;};
 
 struct MinMaxIntRange{IntRange min; IntRange max;};
 
+struct ColorRange{Color first; Color second;};
+
 float getDistance(Vector2 pos1, Vector2 pos2);
+
+Vector2 getDirectionVector(Vector2 pos1, Vector2 pos2);
 
 float getVectorMagnitude(Vector2 vector);
 
@@ -23,12 +27,18 @@ float randomBetween(float min, float max);
 
 float randomBetween(Vector2 range);
 
+unsigned char randomBetween(unsigned char min, unsigned char max);
+
 int randomBetween(int min, int max);
 
 int randomBetween(IntRange range);
 
+Color randomBetween(const ColorRange & range);
+
 //theta: <0.0f, 2.0f * PI>
 Vector2 angleToVector(float theta);
+
+float vectorToAngle(Vector2 vector);
 
 Vector2 operator+(Vector2 lhs, float rhs);
 

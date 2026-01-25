@@ -4,6 +4,10 @@ float getDistance(Vector2 pos1, Vector2 pos2){
     return std::sqrt(std::pow(pos1.x-pos2.x, 2) + std::pow(pos1.y-pos2.y, 2));
 }
 
+Vector2 getDirectionVector(Vector2 pos1, Vector2 pos2){
+    return {pos1.x-pos2.x, pos1.y-pos2.y};
+}
+
 float getVectorMagnitude(Vector2 vector){
     return std::sqrt(std::pow(vector.x, 2) + std::pow(vector.y, 2));
 }
@@ -28,12 +32,29 @@ int randomBetween(int min, int max){
     return min + rand() % (1 + max - min);
 }
 
+unsigned char randomBetween(unsigned char min, unsigned char max){
+    return min + rand() % (1 + max - min);
+}
+
 int randomBetween(IntRange range){
     return range.min + rand() % (1 + range.max - range.min);
 }
 
+Color randomBetween(const ColorRange & range){
+    return{
+        randomBetween(range.first.r, range.second.r),
+        randomBetween(range.first.g, range.second.g),
+        randomBetween(range.first.b, range.second.b),
+        randomBetween(range.first.a, range.second.a),
+    };
+}
+
 Vector2 angleToVector(float theta){
     return VEC2(std::cos(theta), std::sin(theta));
+}
+
+float vectorToAngle(Vector2 vector){
+    return std::atan2(vector.y, vector.x);
 }
 
 Vector2 operator+(Vector2 lhs, float rhs){

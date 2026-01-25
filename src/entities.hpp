@@ -12,7 +12,9 @@ public:
     Vector2 pos = VEC2(0.0f, 0.0f);;
     Vector2 velocity = VEC2(0.0f, 0.0f);;
     float radius = 1.0f;
-    bool detectCollisionWithAquarium(const Vector2 nextPosition, const Environment & environment);
+    bool detectCollisionWithAquarium(const Vector2 nextPosition, const Environment & environment,
+        bool ignoreVelocity = false
+    );
     bool checkIfUnderwater(Environment & environment);
     void applyGravityAndBuoyancy(Environment & environment, bool isUnderwater, float mass);
 };
@@ -45,6 +47,7 @@ public:
     SubstrateType type = SubstrateType::soil;
 
     Substrate(SubstrateType substrateType);
+    void stopSubstrate();
     void update(Environment & environment, vector<Substrate> & substrate, size_t currentSandIdx);
 };
 

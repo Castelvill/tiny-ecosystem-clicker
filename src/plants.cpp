@@ -1,12 +1,18 @@
 #include "plants.hpp"
 
+inline float getMaxStemLengthForLevel(float stemMaxLength, float stemShrinkageRate,
+    int currentlevel
+){
+    return stemMaxLength - currentlevel * stemShrinkageRate;
+}
+
 void PlantDna::randomize(){
     growthTime = randomBetween(SEED_GROWTH_TIME);
     growthSpeed = randomBetween(SEED_GROWTH_SPEED);
-    stemMaxLength = randomBetween(STEM_MAX_LENGTH);
-    leafMaxLength = randomBetween(LEAF_MAX_LENGTH);
-    rootMaxLength = randomBetween(ROOT_MAX_LENGTH);
-    flowerMaxLength = randomBetween(FLOWER_MAX_LENGTH);
+    stemMaxLength = randomBetween(MAX_STEM_LENGTH);
+    leafMaxLength = randomBetween(MAX_LEAF_LENGTH);
+    rootMaxLength = randomBetween(MAX_ROOT_LENGTH);
+    flowerMaxLength = randomBetween(MAX_FLOWER_LENGTH);
     numberOfStemBranches = {
         randomBetween(STEM_BRANCHES_RANGE.min),
         randomBetween(STEM_BRANCHES_RANGE.max)
@@ -15,14 +21,26 @@ void PlantDna::randomize(){
         randomBetween(ROOT_BRANCHES_RANGE.min),
         randomBetween(ROOT_BRANCHES_RANGE.max)
     };
-    numberOfLeafsPerStem = {
-        randomBetween(LEAFS_PER_STEM_RANGE.min),
-        randomBetween(LEAFS_PER_STEM_RANGE.max)
-    };
-    maxStemLevel = randomBetween(MAX_STEM_LEVEL);
-    maxRootLevel = randomBetween(MAX_ROOT_LEVEL);
+    stemMaxLevel = randomBetween(MAX_STEM_LEVEL);
+    rootMaxLevel = randomBetween(MAX_ROOT_LEVEL);
+    leafMaxLevel = randomBetween(MAX_LEAF_LEVEL);
     stemGrowthRate = randomBetween(STEM_GROWTH_RATE);
     rootGrowthRate = randomBetween(ROOT_GROWTH_RATE);
+    stemBranchingAngle = randomBetween(STEM_BRANCHING_ANGLE);
+    rootBranchingAngle = randomBetween(ROOT_BRANCHING_ANGLE);
+    leafBranchingAngle = randomBetween(LEAF_BRANCHING_ANGLE);
+    stemShrinkage = randomBetween(STEM_SHRINKAGE);
+    rootShrinkage = randomBetween(ROOT_SHRINKAGE);
+    rootBranchingChance = randomBetween(ROOT_BRANCHING_CHANCE);
+    for(int level = 0; level < stemMaxLevel && level < LEAVES_PER_STEM_LEVEL_SIZE; ++level){
+        int leavesNumber = randomBetween(LEAVES_PER_STEM_LEVEL[level]);
+        if(leavesNumber > 0)
+            distanceBetweenLeavesAtLevel.push_back(
+                getMaxStemLengthForLevel(stemMaxLength, stemShrinkage, level) / leavesNumber
+            );
+        else
+            distanceBetweenLeavesAtLevel.push_back(0.0f);
+    }
 }
 
 Vector2 getBranchOutVelocity(int numberOfBranches, int branchIndex, bool up){
@@ -47,8 +65,9 @@ Plant::Plant(){
     plantIdx = 0;
     parentIdx = 0;
 
-    growNewParts = false;
+    growthDecision = GrowthDecision::doNothing;
     currentLevel = 0;
+    leafNodesCounter = 0;
 }
 
 void Plant::initSeed(Vector2 newPos, size_t newIdx){
@@ -62,9 +81,12 @@ void Plant::initSeed(Vector2 newPos, size_t newIdx){
 
     type = PlantPartType::seed;
     plantIdx = newIdx;
+    color = LIME;
 }
 
-Plant::Plant(PlantPartType plantPart, Plant parent, size_t newIdx, int maxBranches, int branchIdx){
+Plant::Plant(PlantPartType plantPart, Plant parent, size_t newIdx, Vector2 newVelocity,
+    bool justExtend
+){
     Plant();
     pos = parent.pos;
 
@@ -74,16 +96,40 @@ Plant::Plant(PlantPartType plantPart, Plant parent, size_t newIdx, int maxBranch
     type = plantPart;
     plantIdx = newIdx;
     parentIdx = parent.plantIdx;
-    currentLevel = parent.currentLevel + 1;
+
+    currentLevel = parent.currentLevel;
+    if(!justExtend)
+        ++currentLevel;
+
+    velocity = newVelocity;
     
     switch (type){
         case PlantPartType::stem:
+            if(parent.type == PlantPartType::stem)
+                color = parent.color;
+            else
+                color = randomBetween(PlantDna::STEM_COLOR_RANGE);
             radius = randomBetween(Plant::STEM_RADIUS_RANGE.x, Plant::STEM_RADIUS_RANGE.y);
-            velocity = getBranchOutVelocity(maxBranches, branchIdx, true) * dna.stemGrowthRate;
+            if(justExtend){
+                length = parent.length;
+                leafNodesCounter = parent.leafNodesCounter;
+            } 
             return;
         case PlantPartType::root:
+            if(parent.type == PlantPartType::leaf)
+                color = parent.color;
+            else
+                color = randomBetween(PlantDna::ROOT_COLOR_RANGE);
             radius = randomBetween(Plant::STEM_RADIUS_RANGE.x, Plant::STEM_RADIUS_RANGE.y);
-            velocity = getBranchOutVelocity(maxBranches, branchIdx, false) * dna.rootGrowthRate;
+            return;
+        case PlantPartType::leaf:
+            if(parent.type == PlantPartType::leaf)
+                color = parent.color;
+            else
+                color = randomBetween(PlantDna::LEAF_COLOR_RANGE);
+            radius = randomBetween(Plant::STEM_RADIUS_RANGE.x, Plant::STEM_RADIUS_RANGE.y);
+            if(parent.type == PlantPartType::stem)
+                currentLevel = 0;
             return;
         default:
             return;
@@ -132,7 +178,7 @@ void Plant::growSeed(){
         return;
     }
     active = false;
-    growNewParts = true;
+    growthDecision = GrowthDecision::growStemsAndRootsFromSeed;
 }
 
 void Plant::updateSeed(Environment & environment, vector<Substrate> & substrate){
@@ -146,9 +192,30 @@ void Plant::updateStem(Environment & environment){
     pos.x += velocity.x;
     pos.y += velocity.y;
     length += getVectorMagnitude(velocity);
-    if(length >= dna.stemMaxLength / currentLevel){
-        if(currentLevel < dna.maxStemLevel)
-            growNewParts = true;
+    if(length >= getMaxStemLengthForLevel(dna.stemMaxLength, dna.stemShrinkage, currentLevel)){
+        if(currentLevel < dna.stemMaxLevel)
+            growthDecision = GrowthDecision::growBranches;
+        else
+            growthDecision = GrowthDecision::growLeavesFromStem;
+        active = false;
+    }
+    else if((size_t)currentLevel < dna.distanceBetweenLeavesAtLevel.size()
+        && dna.distanceBetweenLeavesAtLevel[currentLevel] > 0
+        && length >= dna.distanceBetweenLeavesAtLevel[currentLevel] * (leafNodesCounter + 1)
+    ){
+        growthDecision = GrowthDecision::growLeavesAndExtendStem;
+        ++leafNodesCounter;
+        active = false;
+    }
+}
+
+void Plant::updateLeaf(Environment & environment){
+    pos.x += velocity.x;
+    pos.y += velocity.y;
+    length += getVectorMagnitude(velocity);
+    if(length >= dna.leafMaxLength - currentLevel * dna.stemShrinkage){
+        if(currentLevel < dna.leafMaxLevel)
+            growthDecision = GrowthDecision::extendLeaf;
         active = false;
     }
 }
@@ -157,9 +224,11 @@ void Plant::updateRoot(Environment & environment){
     pos.x += velocity.x;
     pos.y += velocity.y;
     length += getVectorMagnitude(velocity);
-    if(length >= dna.rootMaxLength / currentLevel){
-        if(currentLevel < dna.maxRootLevel)
-            growNewParts = true;
+    if(length >= dna.rootMaxLength - currentLevel * dna.rootShrinkage){
+        if(currentLevel == 1 || (rand() % 101 <= dna.rootBranchingChance * 100
+            && currentLevel < dna.rootMaxLevel
+        ))
+            growthDecision = GrowthDecision::growRootBranches;
         active = false;
     }
 }
@@ -173,6 +242,9 @@ void Plant::update(Environment & environment, vector<Substrate> & substrate){
             break;
         case PlantPartType::stem:
             updateStem(environment);
+            break;
+        case PlantPartType::leaf:
+            updateLeaf(environment);
             break;
         case PlantPartType::root:
             updateRoot(environment);
