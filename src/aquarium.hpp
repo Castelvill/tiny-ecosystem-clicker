@@ -1,4 +1,7 @@
+#pragma once
 #include "gui.hpp"
+#include "waterDroplet.hpp"
+#include "ostracod.hpp"
 
 enum class Direction{left, up, right, down, none};
 

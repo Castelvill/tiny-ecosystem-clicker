@@ -1,3 +1,4 @@
+#pragma once
 #include "utilities.hpp"
 
 const int MIN_SCREEN_WIDTH = 440;

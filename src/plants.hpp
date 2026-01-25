@@ -1,4 +1,5 @@
 #include "entities.hpp"
+#include "substrate.hpp"
 
 enum class PlantPartType{
     //Falls to the bottom of the aquarium or floats to the surface. After some time seeds can grow into plants.

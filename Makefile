@@ -7,7 +7,8 @@ LIBS := -lraylib
 SRC_DIR := src
 SRC :=  $(SRC_DIR)/utilities.cpp $(SRC_DIR)/environment.cpp $(SRC_DIR)/entities.cpp \
 		$(SRC_DIR)/plants.cpp $(SRC_DIR)/gui.cpp $(SRC_DIR)/playerState.cpp \
-		$(SRC_DIR)/aquarium.cpp $(SRC_DIR)/gameState.cpp $(SRC_DIR)/main.cpp
+		$(SRC_DIR)/waterDroplet.cpp $(SRC_DIR)/algae.cpp $(SRC_DIR)/substrate.cpp \
+		$(SRC_DIR)/ostracod.cpp $(SRC_DIR)/aquarium.cpp $(SRC_DIR)/gameState.cpp $(SRC_DIR)/main.cpp
 
 OUTPUT := tiny-ecosystem
 
