@@ -188,10 +188,18 @@ void Plant::updateSeed(Environment & environment, vector<Substrate> & substrate)
         growSeed();
 }
 
-void Plant::updateStem(Environment & environment){
+void Plant::commonUpdate(Environment & environment){
+    if(detectCollisionWithAquarium(pos + velocity, environment, false, false)){
+        active = false;
+        return;
+    }
     pos.x += velocity.x;
     pos.y += velocity.y;
     length += getVectorMagnitude(velocity);
+}
+
+void Plant::updateStem(Environment & environment){
+    commonUpdate(environment);
     if(length >= getMaxStemLengthForLevel(dna.stemMaxLength, dna.stemShrinkage, currentLevel)){
         if(currentLevel < dna.stemMaxLevel)
             growthDecision = GrowthDecision::growBranches;
@@ -210,9 +218,7 @@ void Plant::updateStem(Environment & environment){
 }
 
 void Plant::updateLeaf(Environment & environment){
-    pos.x += velocity.x;
-    pos.y += velocity.y;
-    length += getVectorMagnitude(velocity);
+    commonUpdate(environment);
     if(length >= dna.leafMaxLength - currentLevel * dna.stemShrinkage){
         if(currentLevel < dna.leafMaxLevel)
             growthDecision = GrowthDecision::extendLeaf;
@@ -221,9 +227,7 @@ void Plant::updateLeaf(Environment & environment){
 }
 
 void Plant::updateRoot(Environment & environment){
-    pos.x += velocity.x;
-    pos.y += velocity.y;
-    length += getVectorMagnitude(velocity);
+    commonUpdate(environment);
     if(length >= dna.rootMaxLength - currentLevel * dna.rootShrinkage){
         if(currentLevel == 1 || (rand() % 101 <= dna.rootBranchingChance * 100
             && currentLevel < dna.rootMaxLevel

@@ -17,7 +17,7 @@ public:
     Color color;
     
     bool detectCollisionWithAquarium(const Vector2 nextPosition, const Environment & environment,
-        bool ignoreVelocity = false
+        bool ignoreVelocity = false, bool infinitWalls = true
     );
     bool checkIfUnderwater(Environment & environment);
     void applyGravityAndBuoyancy(Environment & environment, bool isUnderwater, float mass);

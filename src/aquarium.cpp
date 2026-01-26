@@ -307,9 +307,6 @@ void Aquarium::updateGameArea(const UserInterface & gui, vector<Aquarium> & aqua
     Vector2 mousePosition = GetMousePosition();
     if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mousePosition.y > gui.GUI_HEIGHT){
         switch (gui.selectedInventorySlotIdx){
-            case InventorySlots::slotBuildAquarium:
-                //TODO?
-                break;
             case InventorySlots::slotWater:
                 spawnWaterDroplet();
                 break;

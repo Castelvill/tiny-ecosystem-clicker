@@ -19,7 +19,7 @@ class PlantDna{
     constexpr static IntRange SEED_GROWTH_SPEED = {2, 2};
     constexpr static Vector2 MAX_STEM_LENGTH = VEC2(40.0f, 60.0f);
     constexpr static Vector2 MAX_LEAF_LENGTH = VEC2(20.0f, 30.0f);
-    constexpr static Vector2 MAX_ROOT_LENGTH = VEC2(15.0f, 35.0f);
+    constexpr static Vector2 MAX_ROOT_LENGTH = VEC2(15.0f, 25.0f);
     constexpr static Vector2 MAX_FLOWER_LENGTH = VEC2(10.0f, 20.0f);
     constexpr static MinMaxIntRange STEM_BRANCHES_RANGE = {{1, 1}, {1, 2}};
     constexpr static MinMaxIntRange ROOT_BRANCHES_RANGE = {{2, 2}, {3, 3}};
@@ -102,6 +102,7 @@ public:
     void initSeed(Vector2 newPos, size_t newIdx);
     void moveSeed(Environment & environment, vector<Substrate> & substrate);
     void growSeed();
+    void commonUpdate(Environment & environment);
     void updateSeed(Environment & environment, vector<Substrate> & substrate);
     void updateStem(Environment & environment);
     void updateLeaf(Environment & environment);

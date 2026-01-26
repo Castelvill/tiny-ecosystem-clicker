@@ -1,7 +1,7 @@
 #include "entities.hpp"
 
 bool Entity::detectCollisionWithAquarium(const Vector2 nextPosition,
-    const Environment & environment, bool ignoreVelocity
+    const Environment & environment, bool ignoreVelocity, bool infinitWalls
 ){
     if(environment.size.x == 0.0f || environment.size.y == 0.0f)
         return false;
@@ -12,12 +12,16 @@ bool Entity::detectCollisionWithAquarium(const Vector2 nextPosition,
         return true;
     }
     //Right wall
-    if((ignoreVelocity || velocity.x > 0.0f) && nextPosition.x + radius >= environment.size.x){
+    if((ignoreVelocity || velocity.x > 0.0f) && nextPosition.x + radius >= environment.size.x
+        && (infinitWalls || nextPosition.y - radius > 0)
+    ){
         velocity.x = 0.0f;
         return true;
     }
     //Left wall
-    if((ignoreVelocity || velocity.x < 0.0f) && nextPosition.x - radius <= 0){
+    if((ignoreVelocity || velocity.x < 0.0f) && nextPosition.x - radius <= 0
+        && (infinitWalls || nextPosition.y - radius > 0)
+    ){
         velocity.x = 0.0f;
         return true;
     }
