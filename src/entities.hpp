@@ -14,6 +14,8 @@ public:
     Vector2 pos = VEC2(0.0f, 0.0f);;
     Vector2 velocity = VEC2(0.0f, 0.0f);;
     float radius = 1.0f;
+    Color color;
+    
     bool detectCollisionWithAquarium(const Vector2 nextPosition, const Environment & environment,
         bool ignoreVelocity = false
     );

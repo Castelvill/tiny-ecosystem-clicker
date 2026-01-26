@@ -370,19 +370,7 @@ void Aquarium::drawEntities() const {
     }
 
     for(const Substrate & substrateIt : substrate){
-        switch (substrateIt.type){
-        case SubstrateType::soil:
-            DrawCircle(substrateIt.pos.x, substrateIt.pos.y, substrateIt.radius, BLACK);
-            break;
-        case SubstrateType::sand:
-            DrawCircle(substrateIt.pos.x, substrateIt.pos.y, substrateIt.radius, YELLOW);
-            break;
-        case SubstrateType::gravel:
-            DrawCircle(substrateIt.pos.x, substrateIt.pos.y, substrateIt.radius, DARKGRAY);
-            break;
-        default:
-            break;
-        }
+        DrawCircle(substrateIt.pos.x, substrateIt.pos.y, substrateIt.radius, substrateIt.color);
     }
 
     for(const Ostracod & ostracodIt : ostracods){

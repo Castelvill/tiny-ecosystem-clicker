@@ -94,7 +94,6 @@ public:
     GrowthDecision growthDecision = GrowthDecision::doNothing;
     int currentLevel = 0;
     int leafNodesCounter = 0;
-    Color color;
 
     Plant();
     Plant(PlantPartType plantPart, Plant parent, size_t newIdx, Vector2 newVelocity,

@@ -6,6 +6,19 @@ Substrate::Substrate(SubstrateType substrateType){
     pos = GetMousePosition();
     velocity = VEC2(0.0f, 0.0f);
     radius = randomBetween(Substrate::SIZE_RANGE.x, Substrate::SIZE_RANGE.y);
+    switch(substrateType){
+        case SubstrateType::soil:
+            color = randomBetween(Substrate::SOIL_COLOR_RANGE);
+            break;
+        case SubstrateType::gravel:
+            color = randomBetween(Substrate::GRAVEL_COLOR_RANGE);
+            break;
+        case SubstrateType::sand:
+            color = randomBetween(Substrate::SAND_COLOR_RANGE);
+            break;
+        default:
+            break;
+    }
 }
 
 SimpleCollisionType Substrate::checkFallingCollision(const Entity & movingEntity,
