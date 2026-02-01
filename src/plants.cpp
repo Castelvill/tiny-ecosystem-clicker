@@ -32,6 +32,11 @@ void PlantDna::randomize(){
     stemShrinkage = randomBetween(STEM_SHRINKAGE);
     rootShrinkage = randomBetween(ROOT_SHRINKAGE);
     rootBranchingChance = randomBetween(ROOT_BRANCHING_CHANCE);
+    maxWaterStored = randomBetween(MAX_WATER_STORED);
+    waterConsumption = randomBetween(WATER_CONSUMPTION);
+    minWaterToGrow = randomBetween(MIN_WATER_TO_GROW);
+    minWaterToDivide = randomBetween(MIN_WATER_TO_DIVIDE);
+    rootWaterIntake = randomBetween(ROOT_WATER_INTAKE);
     for(int level = 0; level < stemMaxLevel && level < LEAVES_PER_STEM_LEVEL_SIZE; ++level){
         int leavesNumber = randomBetween(LEAVES_PER_STEM_LEVEL[level]);
         if(leavesNumber > 0)
@@ -59,18 +64,22 @@ Plant::Plant(){
     pos = VEC2(0.0f, 0.0f);
     velocity = VEC2(0.0f, 0.0f);
 
+    dead = false;
+
     length = 0.0f;
     isMoving = false;
     time = 0;
-    plantIdx = 0;
-    parentIdx = 0;
+    plantPartIdx = 0;
+    parentPartIdx = 0;
 
     growthDecision = GrowthDecision::doNothing;
     currentLevel = 0;
     leafNodesCounter = 0;
+
+    waterStored = 0.0f;
 }
 
-void Plant::initSeed(Vector2 newPos, size_t newIdx){
+void Plant::initSeed(Vector2 newPos, size_t newPartIdx, size_t newPlantIdx){
     pos = newPos;
     radius = randomBetween(Plant::SEED_SIZE_RANGE.x, Plant::SEED_SIZE_RANGE.y); 
 
@@ -80,11 +89,14 @@ void Plant::initSeed(Vector2 newPos, size_t newIdx){
     time = dna.growthTime;
 
     type = PlantPartType::seed;
-    plantIdx = newIdx;
+    plantIdx = newPlantIdx;
+    plantPartIdx = newPartIdx;
     color = LIME;
+
+    waterStored = SEED_INITIAL_WATER;
 }
 
-Plant::Plant(PlantPartType plantPart, Plant parent, size_t newIdx, Vector2 newVelocity,
+Plant::Plant(PlantPartType plantPart, Plant parent, size_t newPartIdx, Vector2 newVelocity,
     bool justExtend
 ){
     Plant();
@@ -94,14 +106,17 @@ Plant::Plant(PlantPartType plantPart, Plant parent, size_t newIdx, Vector2 newVe
     isMoving = false;
     
     type = plantPart;
-    plantIdx = newIdx;
-    parentIdx = parent.plantIdx;
+    plantIdx = parent.plantIdx;
+    plantPartIdx = newPartIdx;
+    parentPartIdx = parent.plantPartIdx;
 
     currentLevel = parent.currentLevel;
     if(!justExtend)
         ++currentLevel;
 
     velocity = newVelocity;
+
+    waterStored = PLANT_PART_INITIAL_WATER;
     
     switch (type){
         case PlantPartType::stem:
@@ -172,7 +187,7 @@ void Plant::moveSeed(Environment & environment, vector<Substrate> & substrate){
         isMoving = false;
 }
 
-void Plant::growSeed(){
+void Plant::growSeed(Environment & environment){
     time -= dna.growthSpeed;
     if(time > 0){
         return;
@@ -183,23 +198,55 @@ void Plant::growSeed(){
 
 void Plant::updateSeed(Environment & environment, vector<Substrate> & substrate){
     if(isMoving)
-        moveSeed(environment, substrate);
-    else
-        growSeed();
+        moveSeed(environment, substrate); 
+    else if(active && environment.waterLevel > 0)
+        growSeed(environment);
 }
 
-void Plant::commonUpdate(Environment & environment){
+bool Plant::commonUpdate(Environment & environment, WholePlantData * wholePlantData,
+    float waterConsumption
+){
+    if(dead)
+        return false;
+
+    //Basic water consumption / living
+    waterStored -= waterConsumption;
+    if(wholePlantData != nullptr)
+        wholePlantData->waterConsumedNow += waterConsumption;
+    if(waterStored <= 0){
+        dead = true;
+        active = false;
+        color = DARKBROWN;
+        return false;
+    }
+
+    //Finished growing
+    if(!active)
+        return false;
+    
+    //Do nothing if there's too little stored water
+    if(waterStored <= dna.minWaterToGrow)
+        return false;
+
+    //If a plant part collides with aquarium, deactivate growth
     if(detectCollisionWithAquarium(pos + velocity, environment, false, false)){
         active = false;
-        return;
+        return false;
     }
+
+    //Grow
+    waterStored -= waterConsumption;
+    if(wholePlantData != nullptr)
+        wholePlantData->waterConsumedNow += waterConsumption;
     pos.x += velocity.x;
     pos.y += velocity.y;
     length += getVectorMagnitude(velocity);
+    return true;
 }
 
-void Plant::updateStem(Environment & environment){
-    commonUpdate(environment);
+void Plant::updateStem(Environment & environment, WholePlantData * wholePlantData){
+    if(!commonUpdate(environment, wholePlantData, dna.waterConsumption))
+        return;
     if(length >= getMaxStemLengthForLevel(dna.stemMaxLength, dna.stemShrinkage, currentLevel)){
         if(currentLevel < dna.stemMaxLevel)
             growthDecision = GrowthDecision::growBranches;
@@ -217,8 +264,9 @@ void Plant::updateStem(Environment & environment){
     }
 }
 
-void Plant::updateLeaf(Environment & environment){
-    commonUpdate(environment);
+void Plant::updateLeaf(Environment & environment, WholePlantData * wholePlantData){
+    if(!commonUpdate(environment, wholePlantData, dna.waterConsumption))
+        return;
     if(length >= dna.leafMaxLength - currentLevel * dna.stemShrinkage){
         if(currentLevel < dna.leafMaxLevel)
             growthDecision = GrowthDecision::extendLeaf;
@@ -226,36 +274,88 @@ void Plant::updateLeaf(Environment & environment){
     }
 }
 
-void Plant::updateRoot(Environment & environment){
-    commonUpdate(environment);
+void Plant::updateRoot(Environment & environment, vector<Substrate> & substrate,
+    WholePlantData * wholePlantData
+){
+    //Absorb water from the substrate
+    if(!dead && !active && environment.waterLevel > 0){
+        float absorbedWater = dna.rootWaterIntake * (
+            substrateInfo.sandCount * WATER_FROM_SAND
+            + substrateInfo.gravelCount * WATER_FROM_GRAVEL
+            + substrateInfo.soilCount * WATER_FROM_SOIL
+        );
+        absorbedWater = std::min(environment.waterLevel, absorbedWater);
+        absorbedWater = std::min(dna.maxWaterStored - waterStored, absorbedWater);
+        if(absorbedWater > 0){
+            environment.waterLevel -= absorbedWater;
+            waterStored += absorbedWater;
+        }
+        waterStored = std::min(waterStored, dna.maxWaterStored);
+        if(wholePlantData != nullptr)
+            wholePlantData->waterAbsorbedNow += absorbedWater;
+    }
+
+    if(!commonUpdate(environment, wholePlantData, dna.waterConsumption))
+        return;
+
+    //Prepare to grow more roots and measure touched soil
     if(length >= dna.rootMaxLength - currentLevel * dna.rootShrinkage){
         if(currentLevel == 1 || (rand() % 101 <= dna.rootBranchingChance * 100
             && currentLevel < dna.rootMaxLevel
         ))
             growthDecision = GrowthDecision::growRootBranches;
         active = false;
+
+        //Get substrate info
+        for(const Substrate & particle : substrate){
+            if(getDistance(pos, particle.pos) <= ROOT_DRINKING_RANGE){
+                switch (particle.type){
+                    case SubstrateType::sand:
+                        ++substrateInfo.sandCount;
+                        break;
+                    case SubstrateType::gravel:
+                        ++substrateInfo.gravelCount;
+                        break;
+                    case SubstrateType::soil:
+                        ++substrateInfo.soilCount;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        if(wholePlantData != nullptr){
+            wholePlantData->touchedSand += substrateInfo.sandCount;
+            wholePlantData->touchedGravel += substrateInfo.gravelCount;
+            wholePlantData->touchedSoil += substrateInfo.soilCount;
+        }
     }
 }
 
-void Plant::update(Environment & environment, vector<Substrate> & substrate){
-    if(!active)
-        return;
+void Plant::update(Environment & environment, vector<Substrate> & substrate, Plant * parentPart,
+    WholePlantData * wholePlantData
+){
+    if(parentPart != nullptr){
+        float waterDifference = (parentPart->waterStored - waterStored) / 2.0f;
+        waterStored += waterDifference;
+        parentPart->waterStored -= waterDifference;
+    }
     switch (type){
         case PlantPartType::seed:
             updateSeed(environment, substrate);
             break;
         case PlantPartType::stem:
-            updateStem(environment);
+            updateStem(environment, wholePlantData);
             break;
         case PlantPartType::leaf:
-            updateLeaf(environment);
+            updateLeaf(environment, wholePlantData);
             break;
         case PlantPartType::root:
-            updateRoot(environment);
+            updateRoot(environment, substrate, wholePlantData);
             break;
         default:
             break;
     }
-
-    //printf("idx: %ld, pos.x: %lf, pos.y: %lf, length: %lf\n", plantIdx, pos.x, pos.y, length);
+    if(wholePlantData != nullptr)
+        wholePlantData->waterStoredNow += waterStored;
 }

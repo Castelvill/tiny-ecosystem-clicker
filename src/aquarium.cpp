@@ -3,14 +3,17 @@
 Aquarium::Aquarium(){
     environment.position = {0, 0};
     environment.size = {0, 0};
+    environment.maxWaterLevel = 0.0f;
 }
 Aquarium::Aquarium(Vector2 newPosition, Vector2 newSize){
     environment.position = newPosition;
     environment.size = newSize;
+    environment.maxWaterLevel = newSize.x * newSize.y;
 }
 Aquarium::Aquarium(const Rectangle & newAquariumRect){
     environment.position = {newAquariumRect.x, newAquariumRect.y};
     environment.size = {newAquariumRect.width, newAquariumRect.height};
+    environment.maxWaterLevel = environment.size.x * environment.size.y;
 }
 
 Aquarium::~Aquarium(){}
@@ -36,8 +39,9 @@ void Aquarium::updateWaterDroplet(){
     for(auto dropletIt = waterDroplets.begin(); dropletIt != waterDroplets.end();){
         if(dropletIt->checkIfUnderwater(environment)){
             dropletIt = waterDroplets.erase(dropletIt);
-            if(environment.waterLevel < environment.size.y)
-                ++environment.waterLevel;
+            environment.waterLevel = std::min(environment.maxWaterLevel,
+                environment.waterLevel + WATER_DROPLET_VALUE
+            );
         }
         else{
             dropletIt->update(environment);
@@ -81,12 +85,12 @@ void Aquarium::updateOstracods(){
 
 void Aquarium::spawnSeed(){
     plants.emplace_back(Plant());
-    plants.back().initSeed(GetMousePosition(), plants.size()-1);
+    plants.back().initSeed(GetMousePosition(), plants.size()-1, 0);
 }
 
 void Aquarium::spawnSeed(Vector2 position){
     plants.emplace_back(Plant());
-    plants.back().initSeed(position, plants.size()-1);
+    plants.back().initSeed(position, plants.size()-1, 0);
 }
 
 inline void growStemsAndRootsFromSeed(Plant & parentPlant, vector<Plant> & plants){
@@ -214,14 +218,45 @@ void growPlants(Plant parentPlant, vector<Plant> & plants){
 void Aquarium::updatePlants(){
     //Index-based iteration, because plants vector can grow when plants are updated.
     size_t currentSize = plants.size();
+
+    //Reset present information about whole plants
+    for(WholePlantData & wholePlantData : wholePlants){
+        wholePlantData.waterStoredNow = 0.0f;
+        wholePlantData.waterAbsorbedNow = 0.0f;
+        wholePlantData.waterConsumedNow = 0.0f;
+    }
+    
     for(size_t idx = 0; idx < currentSize; ++idx){
-        plants[idx].update(environment, substrate);
-        if(plants[idx].growthDecision != GrowthDecision::doNothing){
-            //When transfering seeds between aquariums, indexes will change - must update plantIdx.
-            plants[idx].plantIdx = idx;
+        plants[idx].update(environment, substrate, &plants[plants[idx].parentPartIdx],
+            plants[idx].plantIdx < wholePlants.size() ? &wholePlants[plants[idx].plantIdx] : nullptr
+        );
+        if(plants[idx].growthDecision != GrowthDecision::doNothing
+            //&& plants[idx].waterStored >= plants[idx].dna.minWaterToDivide
+        ){
+            assert(plants[idx].plantIdx < wholePlants.size());
+            if(!wholePlants[plants[idx].plantIdx].canGrow)
+                continue;
+
+            //When transfering seeds between aquariums, indexes will change - must update plantPartIdx.
+            plants[idx].plantPartIdx = idx;
+            const size_t previousSize = plants.size();
             growPlants(plants[idx], plants);
             plants[idx].growthDecision = GrowthDecision::doNothing;
+
+            if(plants[idx].plantIdx < wholePlants.size())
+                wholePlants[plants[idx].plantIdx].plantPartsCount += plants.size() - previousSize;
         }
+    }
+
+    for(size_t plantIdx = 0; plantIdx < wholePlants.size(); ++plantIdx){
+        wholePlants[plantIdx].canGrow = wholePlants[plantIdx].waterConsumedNow
+            <= wholePlants[plantIdx].waterAbsorbedNow;
+        // printf("Plant %ld:\n\tparts: %ld\n\tabsorbed: %f\n\tconsumed: %f\n\tstored: %f\n\tsubstrate: %ld\n\tcan grow: %d\n",
+        //     plantIdx, wholePlants[plantIdx].plantPartsCount, wholePlants[plantIdx].waterAbsorbedNow,
+        //     wholePlants[plantIdx].waterConsumedNow, wholePlants[plantIdx].waterStoredNow,
+        //     wholePlants[plantIdx].touchedSand + wholePlants[plantIdx].touchedGravel
+        //     + wholePlants[plantIdx].touchedSoil, wholePlants[plantIdx].canGrow
+        // );
     }
 }
 
@@ -267,6 +302,25 @@ int transferEntityType(Vector2 aquariumPos, Vector2 aquariumSize, vector<T> & ou
     }
     return transfersCount;
 }
+int transferEntityType(Vector2 aquariumPos, Vector2 aquariumSize, vector<Plant> & outsideContainer,
+    vector<Plant> & aquariumContainer, vector<WholePlantData> & wholePlants
+){
+    int transfersCount = 0;
+    for(auto it = outsideContainer.begin(); it != outsideContainer.end();){
+        if(collisionOfPointAndRectangle(it->pos, toRectangle(aquariumPos, aquariumSize))){
+            it->pos = it->pos - aquariumPos;
+            aquariumContainer.push_back(*it);
+            it = outsideContainer.erase(it);
+            ++transfersCount;
+
+            aquariumContainer.back().plantIdx = wholePlants.size();
+            wholePlants.emplace_back(WholePlantData());
+        }   
+        else
+            ++it;
+    }
+    return transfersCount;
+}
 void Aquarium::transferEntitiesToOtherAquariums(vector<Aquarium> & aquariums, PlayerState & player){
     int transfersCount = 0;
     for(Aquarium & aquarium : aquariums){
@@ -283,7 +337,7 @@ void Aquarium::transferEntitiesToOtherAquariums(vector<Aquarium> & aquariums, Pl
             aquarium.environment.size, ostracods, aquarium.ostracods
         );
         transfersCount += transferEntityType(aquarium.environment.position,
-            aquarium.environment.size, plants, aquarium.plants
+            aquarium.environment.size, plants, aquarium.plants, aquarium.wholePlants
         );
     }
     if(transfersCount > 0)
@@ -296,8 +350,9 @@ void Aquarium::removeWater(vector<Aquarium> & aquariums){
             aquariumIt.environment.size
         ))
             continue;
-        if(aquariumIt.environment.waterLevel > 0)
-            --aquariumIt.environment.waterLevel;
+        aquariumIt.environment.waterLevel = std::max(
+            0.0f, aquariumIt.environment.waterLevel - WATER_DROPLET_VALUE
+        );
         return;
     }
 }
@@ -305,7 +360,9 @@ void Aquarium::updateGameArea(const UserInterface & gui, vector<Aquarium> & aqua
     PlayerState & player
 ){
     Vector2 mousePosition = GetMousePosition();
-    if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && mousePosition.y > gui.GUI_HEIGHT){
+    if(mousePosition.y > gui.GUI_HEIGHT && (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)
+        || (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && IsKeyDown(KEY_LEFT_SHIFT)))  
+    ){
         switch (gui.selectedInventorySlotIdx){
             case InventorySlots::slotWater:
                 spawnWaterDroplet();
@@ -381,10 +438,10 @@ void Aquarium::drawEntities() const {
                 DrawCircleV(plantIt.pos, plantIt.radius, plantIt.color);
                 break;
             case PlantPartType::stem:
-                DrawLineEx(plants[plantIt.parentIdx].pos, plantIt.pos, 5, plantIt.color);
+                DrawLineEx(plants[plantIt.parentPartIdx].pos, plantIt.pos, 5, plantIt.color);
                 break;
             case PlantPartType::leaf:{
-                Vector2 point = plants[plantIt.parentIdx].pos;
+                Vector2 point = plants[plantIt.parentPartIdx].pos;
                 
                 if(plantIt.active || plantIt.currentLevel >= plantIt.dna.leafMaxLevel){
                     float lineAngle = vectorToAngle(getDirectionVector(point, plantIt.pos));
@@ -393,12 +450,13 @@ void Aquarium::drawEntities() const {
                     DrawTriangle(plantIt.pos, rightPoint, leftPoint, plantIt.color);
                 }
                 else{
-                    DrawLineEx(plants[plantIt.parentIdx].pos, plantIt.pos, 10, plantIt.color);
+                    DrawLineEx(plants[plantIt.parentPartIdx].pos, plantIt.pos, 10, plantIt.color);
                 }
             }
                 break;
             case PlantPartType::root:
-                DrawLineEx(plants[plantIt.parentIdx].pos, plantIt.pos, 3, plantIt.color);
+                DrawLineEx(plants[plantIt.parentPartIdx].pos, plantIt.pos, 3, plantIt.color);
+                //DrawCircleV(plantIt.pos, Plant::ROOT_DRINKING_RANGE, { 230, 41, 55, 100 });
                 break;
             default:
                 break;
@@ -419,8 +477,8 @@ void Aquarium::draw() const {
     drawEntities();
 
     //Water
-    DrawRectangle(0, environment.getWaterSurfaceY(), environment.size.x, environment.waterLevel,
-        Environment::WATER_COLOR
+    DrawRectangle(0, environment.getWaterSurfaceY(), environment.size.x,
+        environment.waterLevel / environment.size.x ,Environment::WATER_COLOR
     ); 
 
     EndMode2D();
@@ -431,15 +489,20 @@ void Aquarium::expand(Direction direction, float length){
         case Direction::left:
             environment.position.x -= length;
             environment.size.x += length;
-            return;
+            break;
         case Direction::up:
             environment.position.y -= length;
             environment.size.y += length;
-            return;
+            break;
         case Direction::right:
             environment.size.x += length;
-            return;
+            break;
         default:
-            return;
+            break;
     }
+    environment.maxWaterLevel = environment.size.x * environment.size.y;
+}
+
+bool Aquarium::isExpansionDisabled() const {
+    return substrate.size() > 0 || plants.size() > 0;
 }

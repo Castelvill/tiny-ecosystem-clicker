@@ -34,7 +34,8 @@ void Entity::applyGravityAndBuoyancy(Environment & environment, bool isUnderwate
     if(!isUnderwater)
         velocity.y += GRAVITY * mass;
     else{
-        float buoyancy = 1.0f - (pos.y - environment.getWaterSurfaceY()) / environment.waterLevel;
+        float buoyancy = 1.0f - ((pos.y - environment.getWaterSurfaceY())
+            / (environment.waterLevel / environment.size.x));
         buoyancy += MIN_SAND_FALL;
 
         if(velocity.y == 0.0f)

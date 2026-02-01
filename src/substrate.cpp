@@ -71,7 +71,8 @@ void Substrate::update(Environment & environment, vector<Substrate> & substrate,
         velocity.y += GRAVITY * (radius / Substrate::SIZE_RANGE.y);
     }
     else{
-        float buoyancy = 1.0f - (pos.y - waterSurfacePosY) / environment.waterLevel;
+        float buoyancy = 1.0f - (pos.y - waterSurfacePosY)
+            / (environment.waterLevel / environment.size.x);
         buoyancy += MIN_SAND_FALL;
 
         if(velocity.y == 0.0f){

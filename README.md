@@ -21,6 +21,7 @@ Then clone this repository and build the project by running:
 - Soil, gravel and sand - their particles fall to the bottom of the aquarium forming a substrate.
 - Ostracod - moves in the water in search of food (algae). Can die from starvation.
 - Seed - falls to the bottom of the aquarium or onto the substrate and grows into a simple plant.
+- Plant - grows from the seed until it reaches its maximum size. Requires water and substrate to grow and survive.
 
 ## Graphical interface
 
@@ -46,10 +47,11 @@ Steps:
 1. Select the first action (aquarium) using the buttons at the top of the game window.
 2. Move mouse to the game area (everything below the experience bar) and click the left mouse button - now you have a small aquarium!
 3. You can click on the edges of the aquarium to expand it.
-4. If you want to move the aquarium, select the second action button, click on the selected aquarium and move it with your mouse.
+4. If you want to move the aquarium, select the second action button, click on the selected aquarium and while holding the mouse button down move aquarium around the game area.
 5. Select any other action button (from 2nd to 10th option).
 6. Move your mouse above or inside the selected aquarium and click the left mouse button. Each click performs the selected action.
 7. You can switch actions at any time.
+8. If you hold down the left shift key and the left mouse button, you can spam selected action.
 
 Final step: Use all available actions to create many cool aquariums and enjoy the view!
 

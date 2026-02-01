@@ -2,6 +2,7 @@
 #include "gui.hpp"
 #include "waterDroplet.hpp"
 #include "ostracod.hpp"
+#include <cassert>
 
 enum class Direction{left, up, right, down, none};
 
@@ -12,6 +13,7 @@ class Aquarium{
     vector<Substrate> substrate;
     vector<Ostracod> ostracods;
     vector<Plant> plants;
+    vector<WholePlantData> wholePlants;
 public:
     Aquarium();
     Aquarium(Vector2 newPosition, Vector2 newSize);
@@ -52,4 +54,6 @@ public:
     void drawEntities() const;
     void draw() const;
     void expand(Direction direction, float length);
+
+    bool isExpansionDisabled() const;
 };

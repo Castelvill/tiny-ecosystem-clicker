@@ -9,6 +9,7 @@ const float GRAVITY = 0.1f;
 const float MIN_SAND_FALL = 0.5f;
 const float SPEED_LIMIT = 1.0f;
 const int SATURATION_FROM_ALGAE = 300;
+const float WATER_DROPLET_VALUE = 50.0f;
 
 class Environment{
 public:
@@ -16,7 +17,8 @@ public:
     
     Vector2 position = {0, 0};
     Vector2 size = {0, 0};
-    float waterLevel = 0;
+    float waterLevel = 0.0f;
+    float maxWaterLevel = 0.0f;
 
     Environment();
     float getWaterSurfaceY() const;

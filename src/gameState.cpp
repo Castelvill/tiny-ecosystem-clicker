@@ -26,6 +26,7 @@ AquariumBuilder GameState::getAquariumBuilder() const {
         Rectangle aquariumRect = aquarium.getRectangle();
 
         if(CheckCollisionRecs(shadowCollision, aquariumRect)){
+            expansionState.isObstructed = aquarium.isExpansionDisabled();
             expansionState.aquarium = &aquarium;
 
             //Expand upwards
