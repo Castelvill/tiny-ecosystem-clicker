@@ -1,5 +1,6 @@
 #include "substrate.hpp"
 
+Substrate::Substrate() {}
 Substrate::Substrate(SubstrateType substrateType){
     type = substrateType;
     active = true;

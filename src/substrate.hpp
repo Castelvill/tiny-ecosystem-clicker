@@ -1,7 +1,7 @@
 #pragma once
 #include "entities.hpp"
 
-enum class SubstrateType {soil, sand, gravel};
+enum class SubstrateType : int {soil = 0, sand = 1, gravel = 2};
 
 enum class SimpleCollisionType {none, left, right, full};
 
@@ -17,6 +17,7 @@ public:
 
     SubstrateType type = SubstrateType::soil;
 
+    Substrate();
     Substrate(SubstrateType substrateType);
     void stopSubstrate();
     void update(Environment & environment, vector<Substrate> & substrate, size_t currentSandIdx);

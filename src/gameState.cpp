@@ -200,6 +200,10 @@ void GameState::update(){
     for(Aquarium & aquarium : aquariums)
         aquarium.update();
     gameArea.update();
+    if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
+        saveToFile("savefile");
+    else if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_L))
+        loadFromFile("savefile");
 }
 
 void GameState::drawAquariumBuilderOverlay() const {
@@ -247,4 +251,61 @@ void GameState::draw() const {
     gui.draw(player);
 
     drawGlobalActionsOverlays();
+}
+
+void GameState::saveToFile(const string & fileName){
+    std::ofstream file(fileName, std::ios::binary);
+    if(!file.is_open()){
+        fprintf(stderr, "Failed to open '%s' file.\n", fileName.c_str());
+        return;
+    }
+
+    std::uint32_t fileTypeSignature = SAVE_FILE_SIGNATURE;
+    std::uint32_t fileTypeVersion = SAVE_FILE_VERSION;
+
+    writeToBinary(file, fileTypeSignature);
+    writeToBinary(file, fileTypeVersion);
+
+    writeToBinary(file, aquariums.size());
+    for(const Aquarium & aquarium : aquariums){
+        aquarium.saveToFile(file);
+    }
+
+    file.close();
+}
+
+void GameState::loadFromFile(const string & fileName){
+    aquariums.clear();
+
+    std::ifstream file(fileName, std::ios::binary);
+    if(!file.is_open()){
+        fprintf(stderr, "Failed to open '%s' file.\n", fileName.c_str());
+        return;
+    }
+
+    std::uint32_t fileTypeSignature;
+    std::uint32_t fileTypeVersion;
+    readFromBinary(file, fileTypeSignature);
+    readFromBinary(file, fileTypeVersion);
+    if(fileTypeSignature != SAVE_FILE_SIGNATURE){
+        fprintf(stderr, "Save file '%s' has a wrong file signature.\n",
+            fileName.c_str()
+        );
+        return;
+    }
+    if(fileTypeVersion != SAVE_FILE_VERSION){
+        fprintf(stderr, "Save file '%s' has a wrong version: %d. The current save file version is %d.\n",
+            fileName.c_str(), fileTypeVersion, SAVE_FILE_VERSION
+        );
+        return;
+    }
+
+    size_t aquariumVectorSize = 0; 
+    readFromBinary(file, aquariumVectorSize);
+    for(size_t idx = 0; idx < aquariumVectorSize; ++idx){
+        aquariums.emplace_back(Aquarium());
+        aquariums.back().loadFromFile(file);
+    }
+
+    file.close();
 }

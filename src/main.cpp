@@ -48,6 +48,10 @@ inline void setupRaylib(){
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Tiny Ecosystem Clicker");
     SetWindowMinSize(MIN_SCREEN_WIDTH, MIN_SCREEN_HEIGHT);
     SetTargetFPS(60);
+    
+    //Changing directory for the debugger
+    const char * app_dir  = GetApplicationDirectory();
+    ChangeDirectory(app_dir);
 }
 
 int main(){

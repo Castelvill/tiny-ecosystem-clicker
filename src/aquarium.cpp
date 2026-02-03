@@ -506,3 +506,215 @@ void Aquarium::expand(Direction direction, float length){
 bool Aquarium::isExpansionDisabled() const {
     return substrate.size() > 0 || plants.size() > 0;
 }
+
+void Aquarium::saveToFile(std::ofstream & file) const {
+    //Environment
+    writeToBinary(file, environment.position);
+    writeToBinary(file, environment.size);
+    writeToBinary(file, environment.waterLevel);
+    writeToBinary(file, environment.maxWaterLevel);
+
+    //Water droplets
+    writeToBinary(file, waterDroplets.size());
+    for(const WaterDroplet & it : waterDroplets){
+        it.saveToFile(file);
+    }
+
+    //Algaes
+    writeToBinary(file, algaes.size());
+    for(const Algae & it : algaes){
+        it.saveToFile(file);
+    }
+
+    //Substrate
+    writeToBinary(file, substrate.size());
+    for(const Substrate & it : substrate){
+        it.saveToFile(file);
+        writeToBinary(file, static_cast<int>(it.type));
+    }
+
+    //Ostracods
+    writeToBinary(file, ostracods.size());
+    for(const Ostracod & it : ostracods){
+        it.saveToFile(file);
+        writeToBinary(file, it.alive);
+        writeToBinary(file, it.saturation);
+        writeToBinary(file, it.reactionTime);
+        writeToBinary(file, it.reactionCooldown);
+        writeToBinary(file, it.eatingCooldown);
+        writeToBinary(file, it.vision);
+        writeToBinary(file, it.speed);
+    }
+
+    //Plants
+    writeToBinary(file, plants.size());
+    for(const Plant & it : plants){
+        it.saveToFile(file);
+
+        //Dna - TODO: PLEASE MOVE IT TO WHOLE PLANT STRUCT
+        writeToBinary(file, it.dna.growthTime);
+        writeToBinary(file, it.dna.growthSpeed);
+        writeToBinary(file, it.dna.stemMaxLength);
+        writeToBinary(file, it.dna.leafMaxLength);
+        writeToBinary(file, it.dna.rootMaxLength);
+        writeToBinary(file, it.dna.flowerMaxLength);
+        writeToBinary(file, it.dna.numberOfStemBranches);
+        writeToBinary(file, it.dna.numberOfRootBranches);
+        writeToBinary(file, it.dna.stemMaxLevel);
+        writeToBinary(file, it.dna.rootMaxLevel);
+        writeToBinary(file, it.dna.leafMaxLevel);
+        writeToBinary(file, it.dna.stemGrowthRate);
+        writeToBinary(file, it.dna.rootGrowthRate);
+        writeToBinary(file, it.dna.stemBranchingAngle);
+        writeToBinary(file, it.dna.rootBranchingAngle);
+        writeToBinary(file, it.dna.leafBranchingAngle);
+        writeToBinary(file, it.dna.stemShrinkage);
+        writeToBinary(file, it.dna.rootShrinkage);
+        writeToBinary(file, it.dna.rootBranchingChance);
+        writeToBinary(file, it.dna.distanceBetweenLeaves);
+        writeToBinary(file, it.dna.maxWaterStored);
+        writeToBinary(file, it.dna.waterConsumption);
+        writeToBinary(file, it.dna.minWaterToGrow);
+        writeToBinary(file, it.dna.minWaterToDivide);
+        writeToBinary(file, it.dna.rootWaterIntake);
+        writeToBinary(file, it.dna.distanceBetweenLeavesAtLevel.size());
+        for(float distance : it.dna.distanceBetweenLeavesAtLevel)
+            writeToBinary(file, distance);
+
+        //Plant
+        writeToBinary(file, static_cast<int>(it.type));
+        writeToBinary(file, it.plantIdx);
+        writeToBinary(file, it.plantPartIdx);
+        writeToBinary(file, it.parentPartIdx);
+        writeToBinary(file, static_cast<int>(it.growthDecision));
+        writeToBinary(file, it.currentLevel);
+        writeToBinary(file, it.leafNodesCounter);
+        writeToBinary(file, it.waterStored);
+        writeToBinary(file, it.dead);
+
+        //Substrate info
+        writeToBinary(file, it.substrateInfo.sandCount);
+        writeToBinary(file, it.substrateInfo.gravelCount);
+        writeToBinary(file, it.substrateInfo.soilCount);
+    }
+
+    //Whole plants
+    writeToBinary(file, wholePlants.size());
+    for(const WholePlantData & it : wholePlants){
+        writeToBinary(file, it.plantPartsCount);
+        writeToBinary(file, it.touchedSand);
+        writeToBinary(file, it.touchedGravel);
+        writeToBinary(file, it.touchedGravel);
+    }
+}
+
+void Aquarium::loadFromFile(std::ifstream & file){
+    //Environment
+    readFromBinary(file, environment.position);
+    readFromBinary(file, environment.size);
+    readFromBinary(file, environment.waterLevel);
+    readFromBinary(file, environment.maxWaterLevel);
+
+    //Water droplets
+    size_t vectorSize = 0;
+    readFromBinary(file, vectorSize);
+    for(size_t idx = 0; idx < vectorSize; ++idx){
+        waterDroplets.emplace_back(WaterDroplet());
+        waterDroplets.back().loadFromFile(file);
+    }
+
+    //Algaes
+    readFromBinary(file, vectorSize);
+    for(size_t idx = 0; idx < vectorSize; ++idx){
+        algaes.emplace_back(Algae());
+        algaes.back().loadFromFile(file);
+    }
+
+    //Substrate
+    readFromBinary(file, vectorSize);
+    for(size_t idx = 0; idx < vectorSize; ++idx){
+        substrate.emplace_back(Substrate());
+        substrate.back().loadFromFile(file);
+        readFromBinary(file, substrate.back().type);
+    }
+
+    //Ostracods
+    readFromBinary(file, vectorSize);
+    for(size_t idx = 0; idx < vectorSize; ++idx){
+        ostracods.emplace_back(Ostracod());
+        ostracods.back().loadFromFile(file);
+        readFromBinary(file, ostracods.back().alive);
+        readFromBinary(file, ostracods.back().saturation);
+        readFromBinary(file, ostracods.back().reactionTime);
+        readFromBinary(file, ostracods.back().reactionCooldown);
+        readFromBinary(file, ostracods.back().eatingCooldown);
+        readFromBinary(file, ostracods.back().vision);
+        readFromBinary(file, ostracods.back().speed);
+    }
+
+    //Plants
+    readFromBinary(file, vectorSize);
+    for(size_t idx = 0; idx < vectorSize; ++idx){
+        plants.emplace_back(Plant());
+        plants.back().loadFromFile(file);
+
+        //Dna - TODO: PLEASE MOVE IT TO WHOLE PLANT STRUCT
+        readFromBinary(file, plants.back().dna.growthTime);
+        readFromBinary(file, plants.back().dna.growthSpeed);
+        readFromBinary(file, plants.back().dna.stemMaxLength);
+        readFromBinary(file, plants.back().dna.leafMaxLength);
+        readFromBinary(file, plants.back().dna.rootMaxLength);
+        readFromBinary(file, plants.back().dna.flowerMaxLength);
+        readFromBinary(file, plants.back().dna.numberOfStemBranches);
+        readFromBinary(file, plants.back().dna.numberOfRootBranches);
+        readFromBinary(file, plants.back().dna.stemMaxLevel);
+        readFromBinary(file, plants.back().dna.rootMaxLevel);
+        readFromBinary(file, plants.back().dna.leafMaxLevel);
+        readFromBinary(file, plants.back().dna.stemGrowthRate);
+        readFromBinary(file, plants.back().dna.rootGrowthRate);
+        readFromBinary(file, plants.back().dna.stemBranchingAngle);
+        readFromBinary(file, plants.back().dna.rootBranchingAngle);
+        readFromBinary(file, plants.back().dna.leafBranchingAngle);
+        readFromBinary(file, plants.back().dna.stemShrinkage);
+        readFromBinary(file, plants.back().dna.rootShrinkage);
+        readFromBinary(file, plants.back().dna.rootBranchingChance);
+        readFromBinary(file, plants.back().dna.distanceBetweenLeaves);
+        readFromBinary(file, plants.back().dna.maxWaterStored);
+        readFromBinary(file, plants.back().dna.waterConsumption);
+        readFromBinary(file, plants.back().dna.minWaterToGrow);
+        readFromBinary(file, plants.back().dna.minWaterToDivide);
+        readFromBinary(file, plants.back().dna.rootWaterIntake);
+        size_t nestedVectorSize = 0;
+        readFromBinary(file, nestedVectorSize);
+        for(size_t idx = 0; idx < nestedVectorSize; ++idx){
+            plants.back().dna.distanceBetweenLeavesAtLevel.emplace_back();
+            readFromBinary(file, plants.back().dna.distanceBetweenLeavesAtLevel.back());
+        }   
+
+        //Plant
+        readFromBinary(file, plants.back().type);
+        readFromBinary(file, plants.back().plantIdx);
+        readFromBinary(file, plants.back().plantPartIdx);
+        readFromBinary(file, plants.back().parentPartIdx);
+        readFromBinary(file, plants.back().growthDecision);
+        readFromBinary(file, plants.back().currentLevel);
+        readFromBinary(file, plants.back().leafNodesCounter);
+        readFromBinary(file, plants.back().waterStored);
+        readFromBinary(file, plants.back().dead);
+
+        //Substrate info
+        readFromBinary(file, plants.back().substrateInfo.sandCount);
+        readFromBinary(file, plants.back().substrateInfo.gravelCount);
+        readFromBinary(file, plants.back().substrateInfo.soilCount);
+    }
+
+    //Whole plants
+    readFromBinary(file, vectorSize);
+    for(size_t idx = 0; idx < vectorSize; ++idx){
+        wholePlants.emplace_back(WholePlantData());
+        readFromBinary(file, wholePlants.back().plantPartsCount);
+        readFromBinary(file, wholePlants.back().touchedSand);
+        readFromBinary(file, wholePlants.back().touchedGravel);
+        readFromBinary(file, wholePlants.back().touchedGravel);
+    }
+}

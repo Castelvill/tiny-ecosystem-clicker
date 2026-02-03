@@ -4,6 +4,10 @@
 #include <math.h>
 #include <string>
 #include "raylib.h"
+#include <ostream>
+#include <istream>
+#include <type_traits>
+#include <cstdint>
 
 using std::string;
 
@@ -60,3 +64,19 @@ bool detectButtonCollision(Vector2 mousePos, Vector2 buttonPos, Vector2 buttonSi
 Rectangle toRectangle(Vector2 position, Vector2 size);
 
 bool collisionOfPointAndRectangle(Vector2 point, Rectangle rectangle);
+
+// Write an object as raw bytes
+template <typename T>
+bool writeToBinary(std::ostream &out, const T &value) {
+    static_assert(std::is_trivially_copyable_v<T>);
+    out.write(reinterpret_cast<const char*>(&value), sizeof(T));
+    return bool(out);
+}
+
+// Read an object from raw bytes
+template <typename T>
+bool readFromBinary(std::istream &in, T &value) {
+    static_assert(std::is_trivially_copyable_v<T>);
+    in.read(reinterpret_cast<char*>(&value), sizeof(T));
+    return bool(in);
+}

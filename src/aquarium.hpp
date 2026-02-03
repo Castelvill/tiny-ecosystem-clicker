@@ -56,4 +56,7 @@ public:
     void expand(Direction direction, float length);
 
     bool isExpansionDisabled() const;
+
+    void saveToFile(std::ofstream & file) const;
+    void loadFromFile(std::ifstream & file);
 };

@@ -1,5 +1,9 @@
 #include "aquarium.hpp"
 
+const std::uint32_t SAVE_FILE_SIGNATURE = ('T' ) | ('I' << 8) | ('N' << 16) | ('Y' << 24);
+const std::uint32_t SAVE_FILE_VERSION = 1;
+
+
 struct AquariumBuilder{
     bool active = false;
     Rectangle exansionRect;
@@ -28,14 +32,18 @@ public:
     const Color EXPAND_OVERLAY_COLOR = {40, 230, 80, 150};
     const Color ACTIVE_OVERLAY_COLOR = {40, 230, 40, 150};
 
-    Aquarium gameArea;
-    vector<Aquarium> aquariums;
-    PlayerState player;
+    //Stores texture data and draws it
     UserInterface gui;
+    //Keeps player level info
+    PlayerState player;
+    //Not persistent. Used only for spawning things and making them fall into real aquariums
+    Aquarium gameArea;
+    //Data about every created ecosystem
+    vector<Aquarium> aquariums;
 
-    //Action: build aquarium
+    //Used by action: build aquarium
     AquariumBuilder aquariumBuilder;
-    //Action: move aquarium
+    //Used by action: move aquarium
     AquariumMover aquariumMover;
 
     bool doesExpansionCollideWithAquariums(const Rectangle & expansionRect) const;
@@ -54,4 +62,7 @@ public:
     void drawAquariumMoverOverlay() const;
     void drawGlobalActionsOverlays() const;
     void draw() const;
+
+    void saveToFile(const string & fileName);
+    void loadFromFile(const string & fileName);
 };

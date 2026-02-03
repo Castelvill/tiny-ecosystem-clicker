@@ -44,3 +44,19 @@ void Entity::applyGravityAndBuoyancy(Environment & environment, bool isUnderwate
         velocity.y = std::min(buoyancy, velocity.y);
     }
 }
+
+void Entity::saveToFile(std::ofstream & file) const {
+    writeToBinary(file, active);
+    writeToBinary(file, pos);
+    writeToBinary(file, velocity);
+    writeToBinary(file, radius);
+    writeToBinary(file, color);
+}
+
+void Entity::loadFromFile(std::ifstream & file){
+    readFromBinary(file, active);
+    readFromBinary(file, pos);
+    readFromBinary(file, velocity);
+    readFromBinary(file, radius);
+    readFromBinary(file, color);
+}

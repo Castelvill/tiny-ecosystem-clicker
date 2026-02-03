@@ -3,3 +3,4 @@ tiny-ecosystem
 .vscode
 temp/*
 callgrind.*
+savefile

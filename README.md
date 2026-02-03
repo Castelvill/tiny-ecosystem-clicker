@@ -55,6 +55,10 @@ Steps:
 
 Final step: Use all available actions to create many cool aquariums and enjoy the view!
 
+You can save the game state by pressing keys: ctrl + S.
+You can load the saved game state by pressing keys: ctrl + L.
+The save file is in a custom binary format and its version will change in the future. If the save file can't be loaded because of the version, use older build of the game. Look for SAVE_FILE_VERSION constant in the code to compare binary versions.
+
 ## Screenshots
 
 <br>

@@ -5,6 +5,8 @@
 #include <vector>
 #include <limits>
 #include <iostream>
+#include <fstream>
+#include <format>
 
 using std::vector;
 
@@ -21,4 +23,7 @@ public:
     );
     bool checkIfUnderwater(Environment & environment);
     void applyGravityAndBuoyancy(Environment & environment, bool isUnderwater, float mass);
+
+    void saveToFile(std::ofstream & file) const;
+    void loadFromFile(std::ifstream & file);
 };

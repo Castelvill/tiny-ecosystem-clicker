@@ -97,14 +97,17 @@ struct SubstrateInfo{
 
 //TODO: Move dna here or create a species vector with just dna
 struct WholePlantData{
+    //Temp data
     float waterStoredNow = 0.0f;
     float waterAbsorbedNow = 0.0f;
     float waterConsumedNow = 0.0f;
+    bool canGrow = true;
+
+    //Persistent
     size_t plantPartsCount = 0;
     size_t touchedSand = 0;
     size_t touchedGravel = 0;
     size_t touchedSoil = 0;
-    bool canGrow = true;
 };
 
 class Plant: public Entity{
@@ -132,6 +135,7 @@ public:
     int leafNodesCounter = 0;
     float waterStored = 0.0f;
     bool dead = false;
+    //Used only by roots
     SubstrateInfo substrateInfo;
 
     Plant();
