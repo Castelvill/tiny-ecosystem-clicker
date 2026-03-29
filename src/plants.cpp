@@ -319,6 +319,9 @@ void Plant::updateRoot(Environment & environment, vector<Substrate> & substrate,
                     case SubstrateType::soil:
                         ++substrateInfo.soilCount;
                         break;
+                    case SubstrateType::deadAlgae:
+                        ++substrateInfo.deadMatterCount;
+                        break;
                     default:
                         break;
                 }
@@ -359,3 +362,126 @@ void Plant::update(Environment & environment, vector<Substrate> & substrate, Pla
     if(wholePlantData != nullptr)
         wholePlantData->waterStoredNow += waterStored;
 }
+
+inline void growStemsAndRootsFromSeed(Plant & parentPlant, vector<Plant> & plants){
+    plants.emplace_back(Plant(PlantPartType::root, parentPlant, plants.size(),
+        {0, parentPlant.dna.stemGrowthRate}
+    ));
+    plants.emplace_back(Plant(PlantPartType::stem, parentPlant, plants.size(),
+        {0, -parentPlant.dna.stemGrowthRate}
+    ));
+}
+
+inline void growLeavesFromStem(Plant & parentPlant, vector<Plant> & plants){
+    const float parentAngle = vectorToAngle(parentPlant.velocity);
+    //Leaves from the main stem
+    //Right leaf
+    float newAngle = parentAngle + parentPlant.dna.leafBranchingAngle;
+    Vector2 newVelocity = angleToVector(newAngle) * parentPlant.dna.stemGrowthRate;
+    plants.emplace_back(Plant(PlantPartType::leaf, parentPlant, plants.size(),
+        newVelocity
+    ));
+    //Left leaf
+    newAngle = parentAngle - parentPlant.dna.leafBranchingAngle;
+    newVelocity = angleToVector(newAngle) * parentPlant.dna.stemGrowthRate;
+    plants.emplace_back(Plant(PlantPartType::leaf, parentPlant, plants.size(),
+        newVelocity
+    ));
+}
+
+inline void growBranches(Plant & parentPlant, vector<Plant> & plants){
+    int maxBranches = randomBetween(parentPlant.dna.numberOfStemBranches);
+    float branchingAngle = 0; 
+    const float parentAngle = vectorToAngle(parentPlant.velocity);
+    //Main stem extension
+    if(parentPlant.velocity.x == 0)
+        plants.emplace_back(Plant(PlantPartType::stem, parentPlant, plants.size(),
+            parentPlant.velocity
+        ));
+    //Branches from the main stem
+    for(int branchIdx = 1; branchIdx <= maxBranches; ++branchIdx){
+        branchingAngle *= -1;
+        if(branchIdx % 2 == 1){
+            branchingAngle += parentPlant.dna.stemBranchingAngle;
+            if(rand() % 2 == 1 && branchIdx == maxBranches)
+                branchingAngle *= -1;
+        }
+            
+        float newAngle = parentAngle + branchingAngle;
+        Vector2 newVelocity = angleToVector(newAngle) * parentPlant.dna.stemGrowthRate;
+        plants.emplace_back(Plant(PlantPartType::stem, parentPlant, plants.size(),
+            newVelocity
+        ));
+    }
+}
+
+inline void extendLeaf(Plant & parentPlant, vector<Plant> & plants){
+    const float parentAngle = vectorToAngle(parentPlant.velocity);
+    const float gravityForceAngle = 0.2f;
+    float newAngle = parentAngle;
+    if(parentPlant.velocity.x <= 0.0f)
+        newAngle -= gravityForceAngle;
+    else 
+        newAngle += gravityForceAngle;
+    Vector2 newVelocity = angleToVector(newAngle) * parentPlant.dna.stemGrowthRate;
+    plants.emplace_back(Plant(PlantPartType::leaf, parentPlant, plants.size(),
+        newVelocity
+    ));
+}
+
+//Btw, you can merge it with growBranches by adding additional parameters
+inline void growRootBranches(Plant & parentPlant, vector<Plant> & plants){
+    int maxBranches = randomBetween(parentPlant.dna.numberOfRootBranches);
+    float branchingAngle = 0; 
+    const float parentAngle = vectorToAngle(parentPlant.velocity);
+    //Main stem extension
+    if(parentPlant.velocity.x == 0)
+        plants.emplace_back(Plant(PlantPartType::root, parentPlant, plants.size(),
+            parentPlant.velocity
+        ));
+    //Branches from the main stem
+    for(int branchIdx = 1; branchIdx <= maxBranches; ++branchIdx){
+        branchingAngle *= -1;
+        if(branchIdx % 2 == 1){
+            branchingAngle += parentPlant.dna.rootBranchingAngle;
+
+            if(rand() % 2 == 1 && branchIdx == maxBranches)
+                branchingAngle *= -1;
+        }
+        
+        float newAngle = parentAngle + branchingAngle;
+        Vector2 newVelocity = angleToVector(newAngle) * parentPlant.dna.rootGrowthRate;
+        plants.emplace_back(Plant(PlantPartType::root, parentPlant, plants.size(),
+            newVelocity
+        ));
+    }
+}
+
+//Parent must be a copy, because plants vector will grow here
+void growPlants(Plant parentPlant, vector<Plant> & plants){
+    switch (parentPlant.growthDecision){
+        case GrowthDecision::growStemsAndRootsFromSeed:
+            growStemsAndRootsFromSeed(parentPlant, plants);
+            return;
+        case GrowthDecision::growBranches:
+            growBranches(parentPlant, plants);
+            return;
+        case GrowthDecision::growLeavesFromStem:
+            growLeavesFromStem(parentPlant, plants);
+            return;
+        case GrowthDecision::growLeavesAndExtendStem:
+            growLeavesFromStem(parentPlant, plants);
+            plants.emplace_back(Plant(PlantPartType::stem, parentPlant, plants.size(),
+                parentPlant.velocity, true
+            ));
+            return;
+        case GrowthDecision::extendLeaf:
+            extendLeaf(parentPlant, plants);
+            return;
+        case GrowthDecision::growRootBranches:
+            growRootBranches(parentPlant, plants);
+            return;
+        default:
+            return;
+    }
+} 

@@ -1,5 +1,9 @@
 #include "gameState.hpp"
 
+float deltaTime = 0;
+double previousTime = GetTime();
+double currentTime = 0.0; 
+
 inline void update(GameState & gameState){
     gameState.update();
 }
@@ -10,7 +14,9 @@ inline void draw(const GameState & gameState){
     ClearBackground(RAYWHITE);
 
     gameState.draw();
-
+    
+    DrawText(TextFormat("CURRENT FPS: %i", (int)(1.0f/deltaTime)), 0.0, GetScreenHeight() - 20, 20, WHITE);
+    
     EndDrawing();
 }
 
@@ -38,6 +44,10 @@ inline void gameLoop(){
     while(!WindowShouldClose()){
         update(gameState);
         draw(gameState);
+
+        currentTime = GetTime();
+        deltaTime = (float)(currentTime - previousTime);
+        previousTime = currentTime;
     }
 }
 

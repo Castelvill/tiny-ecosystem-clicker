@@ -93,6 +93,7 @@ struct SubstrateInfo{
     size_t sandCount = 0;
     size_t gravelCount = 0;
     size_t soilCount = 0;
+    size_t deadMatterCount = 0;
 };
 
 //TODO: Move dna here or create a species vector with just dna
@@ -158,3 +159,5 @@ public:
         WholePlantData * wholePlantData
     );
 };
+
+void growPlants(Plant parentPlant, vector<Plant> & plants);

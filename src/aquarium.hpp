@@ -6,14 +6,44 @@
 
 enum class Direction{left, up, right, down, none};
 
+class Sector{
+public:    
+    const static constexpr Vector2 SIZE = {50, 50}; 
+    const static size_t MAX_ALGAE_SIZE = 50; 
+    Vector2 position;
+    size_t column = 0, row = 0;
+    size_t algaeCount = 0;
+    vector<size_t> neighbourIndexes;
+
+    Sector();
+    Sector(Vector2 newPosition, size_t newColumn, size_t newRow);
+    Rectangle toRectangle() const;
+};
+
+class SectorController{
+public:
+    vector<Sector> sectors;
+    Vector2 size;
+    size_t rows, columns;
+
+    void updateCoverage(Vector2 containerSize);
+};
+
 class Aquarium{
     Environment environment;
+    /* Used to control the local density of entities inside the aquarium.
+    Must be recreated after loading the save file.*/
+    SectorController sectorController;
+
     vector<WaterDroplet> waterDroplets;
     vector<Algae> algaes;
     vector<Substrate> substrate;
     vector<Ostracod> ostracods;
     vector<Plant> plants;
     vector<WholePlantData> wholePlants;
+
+    bool reproduceAlgae(size_t algaeIdx);
+    std::tuple<bool, Vector2, size_t> findSpawnLocation(Sector & sectorIt, size_t sectorIdx);
 public:
     Aquarium();
     Aquarium(Vector2 newPosition, Vector2 newSize);
@@ -22,6 +52,7 @@ public:
     
     Vector2 getPosition() const;
     Rectangle getRectangle() const;
+    size_t getAlgaeSize() const;
 
     void setPosition(Vector2 newPosition);
 
@@ -29,7 +60,9 @@ public:
     void updateWaterDroplet();
 
     void spawnAlgae();
+    void removeDeadAlgae();
     void updateAlgaes();
+    void updateAlgaesOutsideAquarium();
 
     void spawnSoil();
     void spawnSand();
@@ -44,6 +77,7 @@ public:
     void updatePlants();
 
     void update();
+    void updateOutsideAquarium();
     void removeEntitiesOutsideTheScreen(float currentScreenHeight);
     void transferEntitiesToOtherAquariums(vector<Aquarium> & aquariums, PlayerState & player);
     void removeWater(vector<Aquarium> & aquariums);
@@ -52,7 +86,7 @@ public:
     );
     void drawAquarium() const;
     void drawEntities() const;
-    void draw() const;
+    void draw(bool drawSectors) const;
     void expand(Direction direction, float length);
 
     bool isExpansionDisabled() const;

@@ -113,8 +113,8 @@ Rectangle toRectangle(Vector2 position, Vector2 size){
 }
 
 bool collisionOfPointAndRectangle(Vector2 point, Rectangle rectangle){
-    return point.x > rectangle.x
-        && point.x < rectangle.x + rectangle.width
-        && point.y > rectangle.y
-        && point.y < rectangle.y + rectangle.height;
+    return point.x >= rectangle.x
+        && point.x <= rectangle.x + rectangle.width
+        && point.y >= rectangle.y
+        && point.y <= rectangle.y + rectangle.height;
 }

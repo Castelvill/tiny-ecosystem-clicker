@@ -1,7 +1,7 @@
 #include "aquarium.hpp"
 
 const std::uint32_t SAVE_FILE_SIGNATURE = ('T' ) | ('I' << 8) | ('N' << 16) | ('Y' << 24);
-const std::uint32_t SAVE_FILE_VERSION = 1;
+const std::uint32_t SAVE_FILE_VERSION = 2;
 
 
 struct AquariumBuilder{
@@ -45,6 +45,8 @@ public:
     AquariumBuilder aquariumBuilder;
     //Used by action: move aquarium
     AquariumMover aquariumMover;
+
+    bool drawSectors = false;
 
     bool doesExpansionCollideWithAquariums(const Rectangle & expansionRect) const;
     AquariumBuilder getAquariumBuilder() const;

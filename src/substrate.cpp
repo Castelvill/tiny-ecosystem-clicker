@@ -17,6 +17,9 @@ Substrate::Substrate(SubstrateType substrateType){
         case SubstrateType::sand:
             color = randomBetween(Substrate::SAND_COLOR_RANGE);
             break;
+        case SubstrateType::deadAlgae:
+            color = randomBetween(Substrate::DEAD_ALGAE_COLOR_RANGE);
+            break;
         default:
             break;
     }

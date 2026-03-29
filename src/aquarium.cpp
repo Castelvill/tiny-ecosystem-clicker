@@ -1,5 +1,84 @@
 #include "aquarium.hpp"
 
+Sector::Sector(){};
+
+Sector::Sector(Vector2 newPosition, size_t newColumn, size_t newRow){
+    position = newPosition;
+    column = newColumn;
+    row = newRow;
+}
+
+Rectangle Sector::toRectangle() const {
+    return {position.x, position.y, SIZE.x, SIZE.y};
+}
+
+void SectorController::updateCoverage(Vector2 containerSize){
+    if(sectors.empty()){
+        rows = 1;
+        columns = 1;
+        sectors.emplace_back(Sector({0, 0}, 0, 0));
+        size = Sector::SIZE;
+    }
+    if(size.x < containerSize.x){
+        const int sizeDifference = containerSize.x - size.x;
+        size_t columnsToAdd = std::ceil(sizeDifference / Sector::SIZE.x);
+        for(size_t columnCounter = 0; columnCounter < columnsToAdd; ++columnCounter){
+            for(size_t rowCounter = 0; rowCounter < rows; ++rowCounter){
+                sectors.emplace_back(Sector({
+                    columns * Sector::SIZE.x,
+                    rowCounter * Sector::SIZE.y
+                }, columns, rowCounter));
+                //Connect new sector with the one added in the previous iteration
+                if(columnCounter != 0){
+                    sectors.back().neighbourIndexes.emplace_back(sectors.size() - 2);
+                    sectors[sectors.size() - 2].neighbourIndexes.emplace_back(sectors.size() - 1);
+                }
+                //Connect new sector with a neighbouring sector to the left
+                for(size_t sectorIdx = 0; sectorIdx < sectors.size(); ++sectorIdx){
+                    if(sectors.back().column - 1 == sectors[sectorIdx].column
+                        && sectors.back().row == sectors[sectorIdx].row
+                    ){
+                        sectors.back().neighbourIndexes.emplace_back(sectorIdx);
+                        sectors[sectorIdx].neighbourIndexes.emplace_back(sectors.size() - 1);
+                        break;
+                    }
+                }
+            }
+            ++columns;
+            size.x += Sector::SIZE.x;
+        }
+    }
+    if(size.y < containerSize.y){
+        const int sizeDifference = containerSize.y - size.y;
+        size_t rowsToAdd = std::ceil(sizeDifference / Sector::SIZE.y);
+        for(size_t rowCounter = 0; rowCounter < rowsToAdd; ++rowCounter){
+            for(size_t columnCounter = 0; columnCounter < columns; ++columnCounter){
+                sectors.emplace_back(Sector({
+                    columnCounter * Sector::SIZE.x,
+                    rows * Sector::SIZE.y
+                }, columnCounter, rows));
+                //Connect new sector with the one added in the previous iteration
+                if(rowCounter != 0){
+                    sectors.back().neighbourIndexes.emplace_back(sectors.size() - 2);
+                    sectors[sectors.size() - 2].neighbourIndexes.emplace_back(sectors.size() - 1);
+                }
+                //Connect new sector with a neighbouring sector above
+                for(size_t sectorIdx = 0; sectorIdx < sectors.size(); ++sectorIdx){
+                    if(sectors.back().column == sectors[sectorIdx].column
+                        && sectors.back().row - 1 == sectors[sectorIdx].row
+                    ){
+                        sectors.back().neighbourIndexes.emplace_back(sectorIdx);
+                        sectors[sectorIdx].neighbourIndexes.emplace_back(sectors.size() - 1);
+                        break;
+                    }
+                }
+            }
+            ++rows;
+            size.y += Sector::SIZE.y;
+        }
+    }
+}
+
 Aquarium::Aquarium(){
     environment.position = {0, 0};
     environment.size = {0, 0};
@@ -14,6 +93,7 @@ Aquarium::Aquarium(const Rectangle & newAquariumRect){
     environment.position = {newAquariumRect.x, newAquariumRect.y};
     environment.size = {newAquariumRect.width, newAquariumRect.height};
     environment.maxWaterLevel = environment.size.x * environment.size.y;
+    sectorController.updateCoverage(environment.size);
 }
 
 Aquarium::~Aquarium(){}
@@ -26,6 +106,9 @@ Rectangle Aquarium::getRectangle() const {
         environment.position.x, environment.position.y,
         environment.size.x, environment.size.y
     };
+}
+size_t Aquarium::getAlgaeSize() const {
+    return algaes.size();
 }
 
 void Aquarium::setPosition(Vector2 newPosition){
@@ -51,12 +134,127 @@ void Aquarium::updateWaterDroplet(){
 }
 
 void Aquarium::spawnAlgae(){
-    algaes.emplace_back();
+    //algaes.emplace_back(rand() % 2 == 0 ? AlgaeType::floating_algae : AlgaeType::glass_algae);
+    algaes.emplace_back(AlgaeType::glass_algae);
+}
+
+inline Vector2 findSpawnPosition(const SectorController & sectorController,
+    const Sector & sector, Vector2 aquariumSize, float waterSurfaceY
+){
+    //Sector mesh can be bigger than the aquarium.
+    //Sectors on the edges must be clipped to the aquarium size. 
+    Vector2 reducedPosition = sector.position;
+    Vector2 reducedSize = Sector::SIZE;
+    if(sector.column == sectorController.columns - 1)
+        reducedSize.x -= sectorController.size.x - aquariumSize.x;
+    if(sector.row == sectorController.rows - 1)
+        reducedSize.y -= sectorController.size.y - aquariumSize.y;
+
+    //Don't spawn algae above the water.
+    if(sector.position.y < waterSurfaceY){
+        reducedSize.y -= waterSurfaceY - sector.position.y;
+        reducedPosition.y = waterSurfaceY;
+    }
+
+    return {
+        randomBetween(reducedPosition.x, reducedPosition.x + reducedSize.x),
+        randomBetween(reducedPosition.y, reducedPosition.y + reducedSize.y)
+    };
+}
+
+std::tuple<bool, Vector2, size_t> Aquarium::findSpawnLocation(Sector & sectorIt, size_t sectorIdx){
+    //Spawn algae inside the current sector
+    if(sectorIt.algaeCount < Sector::MAX_ALGAE_SIZE){
+        ++sectorIt.algaeCount;
+        return {true, findSpawnPosition(sectorController, sectorIt, environment.size,
+            environment.getWaterSurfaceY()), sectorIdx
+        };
+    }
+
+    //Spawn algae inside a neighbour of the current sector
+    for(const size_t neighbourIdx : sectorIt.neighbourIndexes){
+        Sector & neighbour = sectorController.sectors[neighbourIdx];
+        if(neighbour.algaeCount >= Sector::MAX_ALGAE_SIZE)
+            continue;
+        
+        ++neighbour.algaeCount;
+        return {true, findSpawnPosition(sectorController, neighbour, environment.size,
+            environment.getWaterSurfaceY()), neighbourIdx
+        };
+    }
+
+    return {false, {0, 0}, 0};
+}
+
+bool Aquarium::reproduceAlgae(size_t algaeIdx){
+    Algae & currentAlgae = algaes[algaeIdx];
+    if(!currentAlgae.alive || !currentAlgae.active || currentAlgae.timeToReproduce > 0)
+        return false;
+
+    bool foundFreeSectorToSpawn = false;
+    Vector2 childPosition = currentAlgae.pos;
+    size_t sectorIndexOfSpawn = 0;
+
+    if(currentAlgae.isPlayerMade){
+        //Find the sector where the current algae can spawn its child
+        for(size_t sectorIdx = 0; sectorIdx < sectorController.sectors.size(); ++sectorIdx){
+            Sector & sectorIt = sectorController.sectors[sectorIdx];
+            if(!collisionOfPointAndRectangle(childPosition, sectorIt.toRectangle()))
+                continue;
+
+            std::tie(foundFreeSectorToSpawn, childPosition, sectorIndexOfSpawn) = findSpawnLocation(
+                sectorIt, sectorIdx
+            );
+            
+            break;
+        }
+    }
+    else{
+        std::tie(foundFreeSectorToSpawn, childPosition, sectorIndexOfSpawn) = findSpawnLocation(
+            sectorController.sectors[currentAlgae.sectorIdx], currentAlgae.sectorIdx
+        );
+    }
+    
+    if(!foundFreeSectorToSpawn)
+        return false;
+    
+    currentAlgae.resetReproduction();
+    algaes.emplace_back(currentAlgae.type);
+    algaes.back().reproduce(childPosition, environment);
+    algaes.back().sectorIdx = sectorIndexOfSpawn;
+    algaes.back().isPlayerMade = false;
+    return true;
+}
+//Erase dead algae or turn it into substrate
+void Aquarium::removeDeadAlgae(){
+    for(auto algaeIt = algaes.begin(); algaeIt != algaes.end();){
+        if(!algaeIt->alive){
+            if(!algaeIt->isPlayerMade && algaeIt->sectorIdx < sectorController.sectors.size())
+                -- sectorController.sectors[algaeIt->sectorIdx].algaeCount;
+
+            if(randomBetween(0.0f, 1.0f) < Algae::chanceToTurnIntoSubstrate){
+                substrate.emplace_back(SubstrateType::deadAlgae);
+                substrate.back().pos = algaeIt->pos;
+                substrate.back().radius = algaeIt->radius * 0.5;
+            }
+            algaeIt = algaes.erase(algaeIt);
+        }
+        else
+            ++algaeIt;
+    }
 }
 void Aquarium::updateAlgaes(){
-    for(Algae & algaeIt : algaes){
-        algaeIt.update(environment.getWaterSurfaceY());
+    size_t originalAlgaeCount = algaes.size();
+    for(size_t algaeIdx = 0; algaeIdx < originalAlgaeCount; ++algaeIdx){
+        algaes[algaeIdx].update(environment, algaes, algaeIdx);
+        reproduceAlgae(algaeIdx);
     }
+
+    removeDeadAlgae();
+}
+void Aquarium::updateAlgaesOutsideAquarium(){
+    for(size_t algaeIdx = 0; algaeIdx < algaes.size();++algaeIdx)
+        algaes[algaeIdx].update(environment, algaes, algaeIdx);
 }
 
 void Aquarium::spawnSoil(){
@@ -93,128 +291,6 @@ void Aquarium::spawnSeed(Vector2 position){
     plants.back().initSeed(position, plants.size()-1, 0);
 }
 
-inline void growStemsAndRootsFromSeed(Plant & parentPlant, vector<Plant> & plants){
-    plants.emplace_back(Plant(PlantPartType::root, parentPlant, plants.size(),
-        {0, parentPlant.dna.stemGrowthRate}
-    ));
-    plants.emplace_back(Plant(PlantPartType::stem, parentPlant, plants.size(),
-        {0, -parentPlant.dna.stemGrowthRate}
-    ));
-}
-
-inline void growLeavesFromStem(Plant & parentPlant, vector<Plant> & plants){
-    const float parentAngle = vectorToAngle(parentPlant.velocity);
-    //Leaves from the main stem
-    //Right leaf
-    float newAngle = parentAngle + parentPlant.dna.leafBranchingAngle;
-    Vector2 newVelocity = angleToVector(newAngle) * parentPlant.dna.stemGrowthRate;
-    plants.emplace_back(Plant(PlantPartType::leaf, parentPlant, plants.size(),
-        newVelocity
-    ));
-    //Left leaf
-    newAngle = parentAngle - parentPlant.dna.leafBranchingAngle;
-    newVelocity = angleToVector(newAngle) * parentPlant.dna.stemGrowthRate;
-    plants.emplace_back(Plant(PlantPartType::leaf, parentPlant, plants.size(),
-        newVelocity
-    ));
-}
-
-inline void growBranches(Plant & parentPlant, vector<Plant> & plants){
-    int maxBranches = randomBetween(parentPlant.dna.numberOfStemBranches);
-    float branchingAngle = 0; 
-    const float parentAngle = vectorToAngle(parentPlant.velocity);
-    //Main stem extension
-    if(parentPlant.velocity.x == 0)
-        plants.emplace_back(Plant(PlantPartType::stem, parentPlant, plants.size(),
-            parentPlant.velocity
-        ));
-    //Branches from the main stem
-    for(int branchIdx = 1; branchIdx <= maxBranches; ++branchIdx){
-        branchingAngle *= -1;
-        if(branchIdx % 2 == 1){
-            branchingAngle += parentPlant.dna.stemBranchingAngle;
-            if(rand() % 2 == 1 && branchIdx == maxBranches)
-                branchingAngle *= -1;
-        }
-            
-        float newAngle = parentAngle + branchingAngle;
-        Vector2 newVelocity = angleToVector(newAngle) * parentPlant.dna.stemGrowthRate;
-        plants.emplace_back(Plant(PlantPartType::stem, parentPlant, plants.size(),
-            newVelocity
-        ));
-    }
-}
-
-inline void extendLeaf(Plant & parentPlant, vector<Plant> & plants){
-    const float parentAngle = vectorToAngle(parentPlant.velocity);
-    const float gravityForceAngle = 0.2f;
-    float newAngle = parentAngle;
-    if(parentPlant.velocity.x <= 0.0f)
-        newAngle -= gravityForceAngle;
-    else 
-        newAngle += gravityForceAngle;
-    Vector2 newVelocity = angleToVector(newAngle) * parentPlant.dna.stemGrowthRate;
-    plants.emplace_back(Plant(PlantPartType::leaf, parentPlant, plants.size(),
-        newVelocity
-    ));
-}
-
-//Btw, you can merge it with growBranches by adding additional parameters
-inline void growRootBranches(Plant & parentPlant, vector<Plant> & plants){
-    int maxBranches = randomBetween(parentPlant.dna.numberOfRootBranches);
-    float branchingAngle = 0; 
-    const float parentAngle = vectorToAngle(parentPlant.velocity);
-    //Main stem extension
-    if(parentPlant.velocity.x == 0)
-        plants.emplace_back(Plant(PlantPartType::root, parentPlant, plants.size(),
-            parentPlant.velocity
-        ));
-    //Branches from the main stem
-    for(int branchIdx = 1; branchIdx <= maxBranches; ++branchIdx){
-        branchingAngle *= -1;
-        if(branchIdx % 2 == 1){
-            branchingAngle += parentPlant.dna.rootBranchingAngle;
-
-            if(rand() % 2 == 1 && branchIdx == maxBranches)
-                branchingAngle *= -1;
-        }
-        
-        float newAngle = parentAngle + branchingAngle;
-        Vector2 newVelocity = angleToVector(newAngle) * parentPlant.dna.rootGrowthRate;
-        plants.emplace_back(Plant(PlantPartType::root, parentPlant, plants.size(),
-            newVelocity
-        ));
-    }
-}
-
-//Parent must be a copy, because plants vector will grow here
-void growPlants(Plant parentPlant, vector<Plant> & plants){
-    switch (parentPlant.growthDecision){
-        case GrowthDecision::growStemsAndRootsFromSeed:
-            growStemsAndRootsFromSeed(parentPlant, plants);
-            return;
-        case GrowthDecision::growBranches:
-            growBranches(parentPlant, plants);
-            return;
-        case GrowthDecision::growLeavesFromStem:
-            growLeavesFromStem(parentPlant, plants);
-            return;
-        case GrowthDecision::growLeavesAndExtendStem:
-            growLeavesFromStem(parentPlant, plants);
-            plants.emplace_back(Plant(PlantPartType::stem, parentPlant, plants.size(),
-                parentPlant.velocity, true
-            ));
-            return;
-        case GrowthDecision::extendLeaf:
-            extendLeaf(parentPlant, plants);
-            return;
-        case GrowthDecision::growRootBranches:
-            growRootBranches(parentPlant, plants);
-            return;
-        default:
-            return;
-    }
-} 
 void Aquarium::updatePlants(){
     //Index-based iteration, because plants vector can grow when plants are updated.
     size_t currentSize = plants.size();
@@ -266,6 +342,18 @@ void Aquarium::update(){
     updateSubstrate();
     updateOstracods();
     updatePlants();
+
+    //printf("Algaes: %ld, Substrate: %ld\n", algaes.size(), substrate.size());
+}
+
+void Aquarium::updateOutsideAquarium(){
+    updateWaterDroplet();
+    updateAlgaesOutsideAquarium();
+    updateSubstrate();
+    updateOstracods();
+    updatePlants();
+
+    //printf("Algaes: %ld, Substrate: %ld\n", algaes.size(), substrate.size());
 }
 
 template<typename T>
@@ -400,7 +488,7 @@ void Aquarium::updateGameArea(const UserInterface & gui, vector<Aquarium> & aqua
 
 void Aquarium::drawAquarium() const {
     //Background
-    DrawRectangleV({0, 0}, environment.size, { 200, 200, 200, 200 });
+    DrawRectangleV({0, 0}, environment.size, { 200, 200, 200, 150 });
 
     //Borders
     DrawLineEx({0, 0}, {0, 0 + environment.size.y},
@@ -420,7 +508,7 @@ void Aquarium::drawEntities() const {
     }
 
     for(const Algae & algaeIt : algaes){
-        DrawCircle(algaeIt.pos.x, algaeIt.pos.y, algaeIt.radius, GREEN); 
+        DrawCircle(algaeIt.pos.x, algaeIt.pos.y, algaeIt.radius, algaeIt.color); 
     }
 
     for(const Substrate & substrateIt : substrate){
@@ -429,7 +517,7 @@ void Aquarium::drawEntities() const {
 
     for(const Ostracod & ostracodIt : ostracods){
         //DrawCircleLines(ostracod.pos.x, ostracod.pos.y, ostracod.vision, BLACK); 
-        DrawCircle(ostracodIt.pos.x, ostracodIt.pos.y, ostracodIt.radius, GRAY); 
+        DrawCircle(ostracodIt.pos.x, ostracodIt.pos.y, ostracodIt.radius, Ostracod::COLOR); 
     }
     
     for(const Plant & plantIt : plants){
@@ -464,7 +552,7 @@ void Aquarium::drawEntities() const {
     }
 }
 
-void Aquarium::draw() const {
+void Aquarium::draw(bool drawSectors) const {
     BeginMode2D((Camera2D){
         .offset = environment.position,
         .target = (Vector2){0, 0},
@@ -478,8 +566,19 @@ void Aquarium::draw() const {
 
     //Water
     DrawRectangle(0, environment.getWaterSurfaceY(), environment.size.x,
-        environment.waterLevel / environment.size.x ,Environment::WATER_COLOR
+        environment.waterLevel / environment.size.x, Environment::WATER_COLOR
     ); 
+
+    if(drawSectors){
+        for(const Sector & sector : sectorController.sectors){
+            DrawRectangleLines(sector.position.x, sector.position.y, sector.SIZE.x, sector.SIZE.y,
+                RED
+            );
+            DrawText(std::to_string(sector.algaeCount).c_str(), sector.position.x,
+                sector.position.y, 20, RED
+            );
+        }
+    }
 
     EndMode2D();
 }
@@ -501,6 +600,7 @@ void Aquarium::expand(Direction direction, float length){
             break;
     }
     environment.maxWaterLevel = environment.size.x * environment.size.y;
+    sectorController.updateCoverage(environment.size);
 }
 
 bool Aquarium::isExpansionDisabled() const {
@@ -514,6 +614,22 @@ void Aquarium::saveToFile(std::ofstream & file) const {
     writeToBinary(file, environment.waterLevel);
     writeToBinary(file, environment.maxWaterLevel);
 
+    //Sectors and their controller
+    writeToBinary(file, sectorController.size);
+    writeToBinary(file, sectorController.rows);
+    writeToBinary(file, sectorController.columns);
+    writeToBinary(file, sectorController.sectors.size());
+    for(const Sector & sectorIt : sectorController.sectors){
+        writeToBinary(file, sectorIt.position);
+        writeToBinary(file, sectorIt.column);
+        writeToBinary(file, sectorIt.row);
+        writeToBinary(file, sectorIt.algaeCount);
+        writeToBinary(file, sectorIt.neighbourIndexes.size());
+        for(const size_t neighbourIdx : sectorIt.neighbourIndexes){
+            writeToBinary(file, neighbourIdx);
+        }
+    }
+
     //Water droplets
     writeToBinary(file, waterDroplets.size());
     for(const WaterDroplet & it : waterDroplets){
@@ -524,6 +640,12 @@ void Aquarium::saveToFile(std::ofstream & file) const {
     writeToBinary(file, algaes.size());
     for(const Algae & it : algaes){
         it.saveToFile(file);
+        writeToBinary(file, static_cast<int>(it.type));
+        writeToBinary(file, it.timeToReproduce);
+        writeToBinary(file, it.lifespan);
+        writeToBinary(file, it.dormantTimer);
+        writeToBinary(file, it.isPlayerMade);
+        writeToBinary(file, it.sectorIdx);
     }
 
     //Substrate
@@ -596,6 +718,7 @@ void Aquarium::saveToFile(std::ofstream & file) const {
         writeToBinary(file, it.substrateInfo.sandCount);
         writeToBinary(file, it.substrateInfo.gravelCount);
         writeToBinary(file, it.substrateInfo.soilCount);
+        writeToBinary(file, it.substrateInfo.deadMatterCount);
     }
 
     //Whole plants
@@ -615,8 +738,27 @@ void Aquarium::loadFromFile(std::ifstream & file){
     readFromBinary(file, environment.waterLevel);
     readFromBinary(file, environment.maxWaterLevel);
 
-    //Water droplets
+    //Sectors and their controller
+    readFromBinary(file, sectorController.size);
+    readFromBinary(file, sectorController.rows);
+    readFromBinary(file, sectorController.columns);
     size_t vectorSize = 0;
+    readFromBinary(file, vectorSize);
+    for(size_t idx = 0; idx < vectorSize; ++idx){
+        sectorController.sectors.emplace_back();
+        readFromBinary(file, sectorController.sectors.back().position);
+        readFromBinary(file, sectorController.sectors.back().column);
+        readFromBinary(file, sectorController.sectors.back().row);
+        readFromBinary(file, sectorController.sectors.back().algaeCount);
+        size_t neighbourSize = 0;
+        readFromBinary(file, neighbourSize);
+        for(size_t neighbourIdx = 0; neighbourIdx < neighbourSize; ++neighbourIdx){
+            sectorController.sectors.back().neighbourIndexes.push_back(0);
+            readFromBinary(file, sectorController.sectors.back().neighbourIndexes.back());
+        }
+    }
+
+    //Water droplets
     readFromBinary(file, vectorSize);
     for(size_t idx = 0; idx < vectorSize; ++idx){
         waterDroplets.emplace_back(WaterDroplet());
@@ -626,8 +768,14 @@ void Aquarium::loadFromFile(std::ifstream & file){
     //Algaes
     readFromBinary(file, vectorSize);
     for(size_t idx = 0; idx < vectorSize; ++idx){
-        algaes.emplace_back(Algae());
+        algaes.emplace_back(AlgaeType::floating_algae);
         algaes.back().loadFromFile(file);
+        readFromBinary(file, algaes.back().type);
+        readFromBinary(file, algaes.back().timeToReproduce);
+        readFromBinary(file, algaes.back().lifespan);
+        readFromBinary(file, algaes.back().dormantTimer);
+        readFromBinary(file, algaes.back().isPlayerMade);
+        readFromBinary(file, algaes.back().sectorIdx);
     }
 
     //Substrate
@@ -706,6 +854,7 @@ void Aquarium::loadFromFile(std::ifstream & file){
         readFromBinary(file, plants.back().substrateInfo.sandCount);
         readFromBinary(file, plants.back().substrateInfo.gravelCount);
         readFromBinary(file, plants.back().substrateInfo.soilCount);
+        readFromBinary(file, plants.back().substrateInfo.deadMatterCount);
     }
 
     //Whole plants

@@ -96,7 +96,10 @@ void GameState::buildAquarium(){
 
     aquariumBuilder = getAquariumBuilder();
 
-    if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !isGuiBlockingBuilding() && !aquariumBuilder.isObstructed){
+    if(((IsKeyDown(KEY_LEFT_SHIFT) && IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+        || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) && !isGuiBlockingBuilding()
+        && !aquariumBuilder.isObstructed
+    ){
         //Expand existing aquarium
         if(aquariumBuilder.aquarium != nullptr
             && aquariumBuilder.aquarium >= aquariums.data()
@@ -105,7 +108,7 @@ void GameState::buildAquarium(){
             size_t aquariumIdx = aquariumBuilder.aquarium - aquariums.data();
             aquariums[aquariumIdx].expand(aquariumBuilder.direction, REAL_EXPANSION_SIZE);
         }
-        else //Or create a new one
+        else if(!IsKeyDown(KEY_LEFT_SHIFT)) //Or create a new one
             aquariums.push_back(Aquarium(aquariumBuilder.exansionRect));
 
         aquariumBuilder.active = false;
@@ -197,13 +200,18 @@ void GameState::update(){
     performGlobalActions();
     gui.update(player);
     gameArea.updateGameArea(gui, aquariums, player);
+
     for(Aquarium & aquarium : aquariums)
         aquarium.update();
-    gameArea.update();
+        
+    gameArea.updateOutsideAquarium();
+
     if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
         saveToFile("savefile");
     else if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_L))
         loadFromFile("savefile");
+    else if(IsKeyDown(KEY_LEFT_ALT) && IsKeyPressed(KEY_S))
+        drawSectors = !drawSectors;
 }
 
 void GameState::drawAquariumBuilderOverlay() const {
@@ -244,7 +252,7 @@ void GameState::draw() const {
     gui.drawBackground();
 
     for(const Aquarium & aquarium : aquariums)
-        aquarium.draw();
+        aquarium.draw(drawSectors);
     
     gameArea.drawEntities();
 

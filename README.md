@@ -17,7 +17,7 @@ Then clone this repository and build the project by running:
 ## Features
 
 - Aquariums - containers for building small ecosystems.
-- Algae - food source, floats in the water.
+- Algae - food source, grows on the glass.
 - Soil, gravel and sand - their particles fall to the bottom of the aquarium forming a substrate.
 - Ostracod - moves in the water in search of food (algae). Can die from starvation.
 - Seed - falls to the bottom of the aquarium or onto the substrate and grows into a simple plant.
@@ -62,5 +62,13 @@ The save file is in a custom binary format and its version will change in the fu
 ## Screenshots
 
 <br>
-<img src="screenshots/showcase.png" width="700"/>
+<img src="screenshots/showcase_0.png" width="700"/>
+<br>
+
+<br>
+<img src="screenshots/showcase_1.png" width="700"/>
+<br>
+
+<br>
+<img src="screenshots/showcase_2.png" width="700"/>
 <br>

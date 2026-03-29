@@ -137,16 +137,16 @@ void Ostracod::eatAlgae(vector<Algae> & algaes){
         return;
     }
         
-    for(auto algaeIt = algaes.begin(); algaeIt != algaes.end();){
-        float distance = getDistance(pos, algaeIt->pos);
-        if(distance <= radius + algaeIt->radius){
-            algaeIt = algaes.erase(algaeIt);
+    for(Algae & algaeIt : algaes){
+        if(!algaeIt.alive)
+            continue;
+
+        if(getDistance(pos, algaeIt.pos) <= radius + algaeIt.radius){
+            algaeIt.alive = false;
             saturation += SATURATION_FROM_ALGAE;
             eatingCooldown = BASIC_EATING_COOLDOWN;
             break;
         }
-        else
-            ++algaeIt;
     }
 }
 

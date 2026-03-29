@@ -4,7 +4,7 @@
 #include "substrate.hpp"
 
 class Ostracod: public Entity{
-    constexpr static Vector2 SIZE_RANGE = VEC2(2.0f, 8.0f);
+    constexpr static Vector2 SIZE_RANGE = VEC2(2.0f, 4.0f);
     constexpr static Vector2 VISION_RANGE = VEC2(180.0f, 200.0f);
     constexpr static Vector2 REACTION_TIME_RANGE = VEC2(5.0f, 20.0f);
     constexpr static Vector2 SPEED_RANGE = VEC2(0.01f, 0.02f);
@@ -17,6 +17,7 @@ public:
     constexpr static float OUTSIDE_WATER_SPEED_PENALITY = 0.9f;
     constexpr static float AFTER_DEATH_SPEED_PENALITY_PRECISION = 0.1f;
     constexpr static float AFTER_DEATH_SPEED_PENALITY = 0.1f;
+    constexpr static Color COLOR = GRAY;
 
     bool alive = true;
     int saturation = 0;
