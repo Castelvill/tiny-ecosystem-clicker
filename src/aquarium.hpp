@@ -7,26 +7,40 @@
 enum class Direction{left, up, right, down, none};
 
 class Sector{
+    const static size_t MAX_LOW_DETAIL_ALGAE_SIZE = 15;
 public:    
     const static constexpr Vector2 SIZE = {50, 50}; 
     const static size_t MAX_ALGAE_SIZE = 50; 
+
     Vector2 position;
     size_t column = 0, row = 0;
     size_t algaeCount = 0;
+    bool useLowDetail = false;
     vector<size_t> neighbourIndexes;
 
     Sector();
     Sector(Vector2 newPosition, size_t newColumn, size_t newRow);
     Rectangle toRectangle() const;
+    bool canSpawnAlgae();
 };
 
 class SectorController{
 public:
+    const static size_t LOW_DETAIL_SECTOR_LIMIT = 120;
+
     vector<Sector> sectors;
     Vector2 size;
     size_t rows, columns;
 
     void updateCoverage(Vector2 containerSize);
+    void switchToLowDetailAlgaeMode(Sector & sectorIt);
+};
+
+struct AlgaeSpawnInfo{
+    bool canSpawn = false;
+    Vector2 spawnPosition = {0, 0};
+    size_t sectorIdx = 0;
+    bool useLowDetail = false;
 };
 
 class Aquarium{
@@ -43,7 +57,7 @@ class Aquarium{
     vector<WholePlantData> wholePlants;
 
     bool reproduceAlgae(size_t algaeIdx);
-    std::tuple<bool, Vector2, size_t> findSpawnLocation(Sector & sectorIt, size_t sectorIdx);
+    AlgaeSpawnInfo findSpawnLocation(Sector & sectorIt, size_t sectorIdx);
 public:
     Aquarium();
     Aquarium(Vector2 newPosition, Vector2 newSize);

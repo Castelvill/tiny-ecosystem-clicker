@@ -5,7 +5,7 @@ Algae::Algae(AlgaeType newType){
     active = true;
     pos = GetMousePosition();
     velocity = VEC2(0.0f, 0.0f);
-    radius = randomBetween(Algae::SIZE_RANGE.x, Algae::SIZE_RANGE.y);
+    radius = randomBetween(SIZE_RANGE);
     color = randomBetween(DORMANT_COLOR_RANGE);
     timeUntilGoingDormant = TIME_UNTIL_GOING_DORMANT;
     dormantTimer = randomBetween(DORMANT_STATE_DURATION_RANGE);
@@ -14,7 +14,7 @@ Algae::Algae(AlgaeType newType){
     resetReproduction();
 }
 
-void Algae::reproduce(Vector2 parentPosition, const Environment & environment){
+void Algae::reproduce(Vector2 parentPosition, const Environment & environment, bool enlarge){
     switch(type){
         case AlgaeType::floating_algae:
             pos = parentPosition;
@@ -26,6 +26,9 @@ void Algae::reproduce(Vector2 parentPosition, const Environment & environment){
     }
     dormantTimer = 0;
     color = randomBetween(NORMAL_COLOR_RANGE);
+
+    if(enlarge)
+        radius = randomBetween(LARGE_SIZE_RANGE);
 }
 
 void Algae::resetReproduction(){

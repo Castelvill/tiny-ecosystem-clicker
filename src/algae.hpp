@@ -9,6 +9,7 @@ enum class AlgaeType : int {
 
 class Algae: public Entity{
     constexpr static Vector2 SIZE_RANGE = VEC2(2.0f, 3.0f);
+    constexpr static Vector2 LARGE_SIZE_RANGE = VEC2(4.0f, 6.0f);
     constexpr static ColorRange NORMAL_COLOR_RANGE = {{0, 208, 28, 255}, {20, 248, 68, 255}};
     constexpr static ColorRange DORMANT_COLOR_RANGE = {DARKGREEN, {20, 137, 64, 255}};
     constexpr static IntRange MAX_LIFESPAN_RANGE = {600, 1200};
@@ -47,6 +48,6 @@ public:
 
     void resetReproduction();
     Algae(AlgaeType newType);
-    void reproduce(Vector2 parentPosition, const Environment & environment);
+    void reproduce(Vector2 parentPosition, const Environment & environment, bool enlarge);
     void update(const Environment & environment, const vector<Algae> & algaes, size_t itsIdx);
 };

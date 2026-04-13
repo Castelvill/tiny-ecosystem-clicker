@@ -7,6 +7,9 @@ Sector::Sector(Vector2 newPosition, size_t newColumn, size_t newRow){
     column = newColumn;
     row = newRow;
 }
+bool Sector::canSpawnAlgae(){
+    return useLowDetail ? algaeCount < MAX_LOW_DETAIL_ALGAE_SIZE : algaeCount < MAX_ALGAE_SIZE;
+}
 
 Rectangle Sector::toRectangle() const {
     return {position.x, position.y, SIZE.x, SIZE.y};
@@ -29,7 +32,7 @@ void SectorController::updateCoverage(Vector2 containerSize){
                     rowCounter * Sector::SIZE.y
                 }, columns, rowCounter));
                 //Connect new sector with the one added in the previous iteration
-                if(columnCounter != 0){
+                if(rowCounter != 0){
                     sectors.back().neighbourIndexes.emplace_back(sectors.size() - 2);
                     sectors[sectors.size() - 2].neighbourIndexes.emplace_back(sectors.size() - 1);
                 }
@@ -58,7 +61,7 @@ void SectorController::updateCoverage(Vector2 containerSize){
                     rows * Sector::SIZE.y
                 }, columnCounter, rows));
                 //Connect new sector with the one added in the previous iteration
-                if(rowCounter != 0){
+                if(columnCounter != 0){
                     sectors.back().neighbourIndexes.emplace_back(sectors.size() - 2);
                     sectors[sectors.size() - 2].neighbourIndexes.emplace_back(sectors.size() - 1);
                 }
@@ -77,6 +80,14 @@ void SectorController::updateCoverage(Vector2 containerSize){
             size.y += Sector::SIZE.y;
         }
     }
+}
+void SectorController::switchToLowDetailAlgaeMode(Sector & sectorIt){
+    if(!sectorIt.useLowDetail && sectors.size() > LOW_DETAIL_SECTOR_LIMIT
+        && sectorIt.algaeCount >= Sector::MAX_ALGAE_SIZE
+    )
+        sectorIt.useLowDetail = true;
+    else if(sectorIt.algaeCount <= 1)
+        sectorIt.useLowDetail = false;
 }
 
 Aquarium::Aquarium(){
@@ -119,11 +130,14 @@ void Aquarium::spawnWaterDroplet(){
     waterDroplets.emplace_back();
 }
 void Aquarium::updateWaterDroplet(){
+    const float waterDropletValue = std::max(NORMAL_WATER_DROPLET_VALUE,
+        float(environment.maxWaterLevel * WATER_DROPLET_VALUE_FACTOR)
+    );
     for(auto dropletIt = waterDroplets.begin(); dropletIt != waterDroplets.end();){
         if(dropletIt->checkIfUnderwater(environment)){
             dropletIt = waterDroplets.erase(dropletIt);
             environment.waterLevel = std::min(environment.maxWaterLevel,
-                environment.waterLevel + WATER_DROPLET_VALUE
+                environment.waterLevel + waterDropletValue
             );
         }
         else{
@@ -162,28 +176,41 @@ inline Vector2 findSpawnPosition(const SectorController & sectorController,
     };
 }
 
-std::tuple<bool, Vector2, size_t> Aquarium::findSpawnLocation(Sector & sectorIt, size_t sectorIdx){
+AlgaeSpawnInfo Aquarium::findSpawnLocation(Sector & sectorIt, size_t sectorIdx){
+    sectorController.switchToLowDetailAlgaeMode(sectorIt);
+    
     //Spawn algae inside the current sector
-    if(sectorIt.algaeCount < Sector::MAX_ALGAE_SIZE){
+    if(sectorIt.canSpawnAlgae()){
         ++sectorIt.algaeCount;
-        return {true, findSpawnPosition(sectorController, sectorIt, environment.size,
-            environment.getWaterSurfaceY()), sectorIdx
+        return AlgaeSpawnInfo {
+            .canSpawn = true,
+            .spawnPosition = findSpawnPosition(sectorController, sectorIt, environment.size,
+                environment.getWaterSurfaceY()),
+            .sectorIdx = sectorIdx,
+            .useLowDetail = sectorIt.useLowDetail
         };
     }
 
-    //Spawn algae inside a neighbour of the current sector
-    for(const size_t neighbourIdx : sectorIt.neighbourIndexes){
+    //Spawn algae inside a neighbour of the current sector.
+    //Shuffle neighbour indexes vector with the Fisher–Yates method.
+    for(size_t i = sectorIt.neighbourIndexes.size(); i > 1; --i){
+        std::swap(sectorIt.neighbourIndexes[i - 1], sectorIt.neighbourIndexes[rand() % i]);
+    }
+    for(const size_t & neighbourIdx : sectorIt.neighbourIndexes){
         Sector & neighbour = sectorController.sectors[neighbourIdx];
-        if(neighbour.algaeCount >= Sector::MAX_ALGAE_SIZE)
+        if(!neighbour.canSpawnAlgae())
             continue;
         
         ++neighbour.algaeCount;
-        return {true, findSpawnPosition(sectorController, neighbour, environment.size,
-            environment.getWaterSurfaceY()), neighbourIdx
+        return AlgaeSpawnInfo {
+            .canSpawn = true,
+            .spawnPosition = findSpawnPosition(sectorController, neighbour, environment.size,
+                environment.getWaterSurfaceY()),
+            .sectorIdx = neighbourIdx
         };
     }
 
-    return {false, {0, 0}, 0};
+    return AlgaeSpawnInfo{};
 }
 
 bool Aquarium::reproduceAlgae(size_t algaeIdx){
@@ -191,37 +218,32 @@ bool Aquarium::reproduceAlgae(size_t algaeIdx){
     if(!currentAlgae.alive || !currentAlgae.active || currentAlgae.timeToReproduce > 0)
         return false;
 
-    bool foundFreeSectorToSpawn = false;
-    Vector2 childPosition = currentAlgae.pos;
-    size_t sectorIndexOfSpawn = 0;
+    AlgaeSpawnInfo spawnInfo;
 
     if(currentAlgae.isPlayerMade){
         //Find the sector where the current algae can spawn its child
         for(size_t sectorIdx = 0; sectorIdx < sectorController.sectors.size(); ++sectorIdx){
             Sector & sectorIt = sectorController.sectors[sectorIdx];
-            if(!collisionOfPointAndRectangle(childPosition, sectorIt.toRectangle()))
+            if(!collisionOfPointAndRectangle(currentAlgae.pos, sectorIt.toRectangle()))
                 continue;
 
-            std::tie(foundFreeSectorToSpawn, childPosition, sectorIndexOfSpawn) = findSpawnLocation(
-                sectorIt, sectorIdx
-            );
+            spawnInfo = findSpawnLocation(sectorIt, sectorIdx);
             
             break;
         }
     }
     else{
-        std::tie(foundFreeSectorToSpawn, childPosition, sectorIndexOfSpawn) = findSpawnLocation(
-            sectorController.sectors[currentAlgae.sectorIdx], currentAlgae.sectorIdx
-        );
+        Sector & sectorIt = sectorController.sectors[currentAlgae.sectorIdx];
+        spawnInfo = findSpawnLocation(sectorIt, currentAlgae.sectorIdx);
     }
     
-    if(!foundFreeSectorToSpawn)
+    if(!spawnInfo.canSpawn)
         return false;
     
     currentAlgae.resetReproduction();
     algaes.emplace_back(currentAlgae.type);
-    algaes.back().reproduce(childPosition, environment);
-    algaes.back().sectorIdx = sectorIndexOfSpawn;
+    algaes.back().reproduce(spawnInfo.spawnPosition, environment, spawnInfo.useLowDetail);
+    algaes.back().sectorIdx = spawnInfo.sectorIdx;
     algaes.back().isPlayerMade = false;
     return true;
 }
@@ -230,7 +252,7 @@ void Aquarium::removeDeadAlgae(){
     for(auto algaeIt = algaes.begin(); algaeIt != algaes.end();){
         if(!algaeIt->alive){
             if(!algaeIt->isPlayerMade && algaeIt->sectorIdx < sectorController.sectors.size())
-                -- sectorController.sectors[algaeIt->sectorIdx].algaeCount;
+                --sectorController.sectors[algaeIt->sectorIdx].algaeCount;
 
             if(randomBetween(0.0f, 1.0f) < Algae::chanceToTurnIntoSubstrate){
                 substrate.emplace_back(SubstrateType::deadAlgae);
@@ -438,9 +460,13 @@ void Aquarium::removeWater(vector<Aquarium> & aquariums){
             aquariumIt.environment.size
         ))
             continue;
-        aquariumIt.environment.waterLevel = std::max(
-            0.0f, aquariumIt.environment.waterLevel - WATER_DROPLET_VALUE
+
+        const float newWaterLevel = std::min(
+            aquariumIt.environment.waterLevel - NORMAL_WATER_DROPLET_VALUE,
+            aquariumIt.environment.waterLevel
+                - (environment.maxWaterLevel * WATER_DROPLET_VALUE_FACTOR)
         );
+        aquariumIt.environment.waterLevel = std::max(0.0f, newWaterLevel);
         return;
     }
 }
